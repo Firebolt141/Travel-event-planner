@@ -27,24 +27,24 @@ function formatDate(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * ✅ FIXED
+ * - Events (no endDate): exact string match
+ * - Trips (date range): inclusive range
+ */
 function isDateInRange(dateStr: string, startStr: string, endStr?: string) {
-  const date = new Date(dateStr);
-  const start = new Date(startStr);
-
   if (!endStr) {
-    return date.getTime() === start.getTime(); // only show on the startDate
+    return dateStr === startStr;
   }
-
-  const end = new Date(endStr);
-  return date >= start && date <= end;
+  return dateStr >= startStr && dateStr <= endStr;
 }
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null);
   const [events, setEvents] = useState<any[]>([]);
   const [trips, setTrips] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"events" | "trips" | "calendar">("events");
-
+  const [activeTab, setActiveTab] =
+    useState<"events" | "trips" | "calendar">("events");
 
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(
@@ -61,34 +61,30 @@ export default function HomePage() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState("");
+
   const router = useRouter();
+
   function goPrevMonth() {
     setCurrentMonth(
-      new Date(
-        currentMonth.getFullYear(),
-        currentMonth.getMonth() - 1,
-        1
-      )
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
     );
   }
 
   function goNextMonth() {
     setCurrentMonth(
-      new Date(
-        currentMonth.getFullYear(),
-        currentMonth.getMonth() + 1,
-        1
-      )
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
     );
   }
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, setUser);
+
     const unsubTrips = onSnapshot(collection(db, "trips"), (snap) => {
       setTrips(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
+
     const unsubEvents = onSnapshot(collection(db, "events"), (snap) => {
-      setEvents(snap.docs.map((d) => ({id: d.id, ...d.data()})));
+      setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
 
     return () => {
@@ -98,31 +94,23 @@ export default function HomePage() {
     };
   }, []);
 
-    if (!user) {
-        return (
-            <main
-                className="min-h-screen flex flex-col items-center justify-center bg-[#020617] text-white px-5 text-center">
-                <h1 className="text-4xl font-bold mb-4">Meet Asuka 😎</h1>
-                <p className="text-gray-400 mb-8 max-w-md">
-                    Make plans to meet Asuka, keep track of all your trips, events, and TODOs,
-                    and never forget the important stuff (or the silly stuff).
-                    Go wild, plan adventures, or just see what Asuka is up to!
-                </p>
-
-                <button
-                    className="px-8 py-4 rounded-2xl bg-indigo-600 text-white font-semibold"
-                    onClick={() => setUser({name: "Demo User"})}
-                >
-                    Lets Go!
-                </button>
-
-                <p className="text-gray-500 text-sm">
-                    After logging in, you'll see your trips, events, and TODOs. Let the planning begin! 🚀
-                </p>
-            </main>
-        );
-    }
-
+  if (!user) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center bg-[#020617] text-white px-5 text-center">
+        <h1 className="text-4xl font-bold mb-4">Meet Asuka 😎</h1>
+        <p className="text-gray-400 mb-8 max-w-md">
+          Make plans to meet Asuka, keep track of all your trips, events, and
+          TODOs, and never forget the important stuff.
+        </p>
+        <button
+          className="px-8 py-4 rounded-2xl bg-indigo-600 text-white font-semibold"
+          onClick={() => setUser({ name: "Demo User" })}
+        >
+          Lets Go!
+        </button>
+      </main>
+    );
+  }
 
   /* ---------------- CALENDAR DATA ---------------- */
   const year = currentMonth.getFullYear();
@@ -135,21 +123,9 @@ export default function HomePage() {
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
-  const eventsForDate = [
-    ...trips.filter((t) =>
-        isDateInRange(selectedDate, t.startDate, t.endDate)
-    ),
-    ...events.filter((e) =>
-        isDateInRange(selectedDate, e.startDate, e.endDate)
-    ),
-  ];
-
   const todosForDate = trips.flatMap((trip) =>
     (trip.todos || [])
-      .filter((todo: any) => {
-        const date = todo.dueDate || todo.deadline;
-        return date === selectedDate;
-      })
+      .filter((todo: any) => todo.dueDate === selectedDate)
       .map((todo: any) => ({
         ...todo,
         tripName: trip.name,
@@ -159,7 +135,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#020617] text-white pb-28">
-      {/* Header */}
+      {/* HEADER */}
       <header className="px-5 pt-6 pb-4">
         <h1 className="text-3xl font-bold">Planner</h1>
 
@@ -301,14 +277,11 @@ export default function HomePage() {
               if (!day) return <div key={`e-${i}`} />;
 
               const dateStr = formatDate(new Date(year, month, day));
-              const hasEventOrTrip = [
-                ...events,
-                ...trips
-              ].some(item => {
-                const start = formatDate(new Date(item.startDate));
-                const end = formatDate(new Date(item.endDate));
-                return isDateInRange(dateStr, start, end);
-              });
+                const hasEventOrTrip =
+                    events.some(e => e.startDate === dateStr) ||
+                    trips.some(t =>
+                        isDateInRange(dateStr, t.startDate, t.endDate)
+                    );
 
 
 
@@ -366,11 +339,10 @@ export default function HomePage() {
               <p className="text-xs text-gray-400 mb-2">EVENTS & TRIPS</p>
 
               {/* EVENTS */}
-              {events.filter(e => {
-                const start = formatDate(new Date(e.startDate));
-                const end = formatDate(new Date(e.endDate));
-                return isDateInRange(selectedDate, start, end);
-              }).map(event => (
+                {events
+                    .filter(e => e.startDate === selectedDate)
+                    .map(event => (
+
                   <div
                       key={event.id}
                       onClick={() => router.push(`/event/${event.id}`)}
@@ -391,8 +363,9 @@ export default function HomePage() {
                   </div>
               ))}
 
-              {events.filter(e => isDateInRange(selectedDate, e.startDate, e.endDate)).length === 0 &&
-                  trips.filter(t => isDateInRange(selectedDate, t.startDate, t.endDate)).length === 0 && (
+                {events.filter(e => e.startDate === selectedDate).length === 0 &&
+                    trips.filter(t => isDateInRange(selectedDate, t.startDate, t.endDate)).length === 0 && (
+
                       <p className="text-gray-500 text-sm">No events or trips</p>
                   )}
             </div>

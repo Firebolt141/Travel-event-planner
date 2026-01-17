@@ -18,9 +18,10 @@ import {
   Users,
 } from "lucide-react";
 
+/* ---------------- TYPES ---------------- */
+
 type Participant = {
   name: string;
-  email: string;
 };
 
 type Todo = {
@@ -30,23 +31,26 @@ type Todo = {
   dueDate: string;
 };
 
+/* ---------------- PAGE ---------------- */
+
 export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const itemType = type || "trip"; // default to trip if no type passed
+  const itemType = type || "trip";
 
   const [item, setItem] = useState<any>(null);
   const [description, setDescription] = useState("");
 
   // Participant input
   const [pName, setPName] = useState("");
-  const [pEmail, setPEmail] = useState("");
 
   // Todo input
   const [todoText, setTodoText] = useState("");
   const [todoPic, setTodoPic] = useState("");
   const [todoDue, setTodoDue] = useState("");
+
+  /* ---------------- DATA ---------------- */
 
   useEffect(() => {
     if (!id) return;
@@ -56,7 +60,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
     const unsub = onSnapshot(doc(db, collectionName, id), (snap) => {
       const data = snap.data();
       if (!data) return;
-      setItem({id: snap.id, ...data});
+      setItem({ id: snap.id, ...data });
       setDescription(data.description || "");
     });
 
@@ -65,27 +69,25 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
 
   if (!item) {
     return (
-        <div className="min-h-screen bg-[#020617] text-white flex items-center justify-center">
-          Loading…
-        </div>
+      <div className="min-h-screen bg-[#020617] text-white flex items-center justify-center">
+        Loading…
+      </div>
     );
   }
 
-
   /* ---------------- PARTICIPANTS ---------------- */
+
   async function addParticipant() {
-    if (!pName || !pEmail) return;
+    if (!pName) return;
 
     const collectionName = itemType === "event" ? "events" : "trips";
 
     await updateDoc(doc(db, collectionName, id), {
-      participants: arrayUnion({name: pName, email: pEmail}),
+      participants: arrayUnion({ name: pName }),
     });
 
     setPName("");
-    setPEmail("");
   }
-
 
   async function deleteParticipant(p: Participant) {
     const collectionName = itemType === "event" ? "events" : "trips";
@@ -95,8 +97,8 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
     });
   }
 
-
   /* ---------------- TODOS ---------------- */
+
   async function addTodo() {
     if (!todoText || !todoPic || !todoDue) return;
 
@@ -118,7 +120,6 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
     setTodoDue("");
   }
 
-
   async function toggleTodo(todo: Todo) {
     const collectionName = itemType === "event" ? "events" : "trips";
 
@@ -127,7 +128,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
     });
 
     await updateDoc(doc(db, collectionName, id), {
-      todos: arrayUnion({...todo, done: !todo.done}),
+      todos: arrayUnion({ ...todo, done: !todo.done }),
     });
   }
 
@@ -139,6 +140,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
     });
   }
 
+  /* ---------------- UI ---------------- */
 
   return (
     <div className="min-h-screen bg-[#020617] text-white p-5 pb-32">
@@ -158,22 +160,22 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
         </p>
       </div>
 
-      {/* Description */}
+      {/* Description (events + trips) */}
       <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/10">
         <p className="text-sm text-gray-400 mb-2">Description</p>
         <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={async () => {
-              const collectionName = itemType === "event" ? "events" : "trips";
-              await updateDoc(doc(db, collectionName, id), {description});
-            }}
-            placeholder="Add trip description…"
-            className="w-full min-h-[80px] bg-transparent text-white outline-none resize-none"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onBlur={async () => {
+            const collectionName = itemType === "event" ? "events" : "trips";
+            await updateDoc(doc(db, collectionName, id), { description });
+          }}
+          placeholder="Add description…"
+          className="w-full min-h-[80px] bg-transparent text-white outline-none resize-none"
         />
       </div>
 
-      {/* PARTICIPANTS */}
+      {/* PARTICIPANTS (events + trips) */}
       <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/10">
         <div className="flex items-center gap-2 mb-3">
           <Users size={16} />
@@ -186,10 +188,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
               key={i}
               className="flex justify-between items-center bg-black/30 p-3 rounded-xl"
             >
-              <div>
-                <p className="font-medium">{p.name}</p>
-                <p className="text-xs text-gray-400">{p.email}</p>
-              </div>
+              <p className="font-medium">{p.name}</p>
               <button onClick={() => deleteParticipant(p)}>
                 <Trash2 size={16} className="text-red-400" />
               </button>
@@ -201,12 +200,6 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
           placeholder="Name"
           value={pName}
           onChange={(e) => setPName(e.target.value)}
-          className="w-full p-2 mb-2 rounded-xl bg-white/10"
-        />
-        <input
-          placeholder="Email"
-          value={pEmail}
-          onChange={(e) => setPEmail(e.target.value)}
           className="w-full p-2 mb-3 rounded-xl bg-white/10"
         />
 
@@ -218,7 +211,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
         </button>
       </div>
 
-      {/* TODOS */}
+      {/* TODOS (events + trips) */}
       <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
         <p className="text-sm text-gray-400 mb-3">TODOs</p>
 
@@ -259,7 +252,6 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
           ))}
         </div>
 
-        {/* ADD TODO */}
         <input
           placeholder="Task"
           value={todoText}
@@ -267,32 +259,17 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
           className="w-full p-2 mb-2 rounded-xl bg-white/10"
         />
 
-        {/* 🔥 FIXED DARK DROPDOWN */}
         <select
           value={todoPic}
           onChange={(e) => setTodoPic(e.target.value)}
           disabled={(item.participants || []).length === 0}
-          className="
-            w-full mb-3 p-2 rounded-xl
-            bg-black/40 text-white
-            border border-white/10
-            appearance-none
-            focus:outline-none focus:ring-2 focus:ring-indigo-500
-            disabled:opacity-50
-          "
+          className="w-full mb-3 p-2 rounded-xl bg-black/40 text-white border border-white/10"
         >
-          <option value="" className="bg-[#020617] text-white">
-            Assign PIC
-          </option>
-
+          <option value="">Assign PIC</option>
           {(item.participants || []).map((p: Participant, i: number) => (
-              <option
-                  key={`${p.name}-${i}`}
-                  value={p.name}
-                  className="bg-[#020617] text-white"
-              >
-                {p.name}
-              </option>
+            <option key={i} value={p.name}>
+              {p.name}
+            </option>
           ))}
         </select>
 
