@@ -277,6 +277,13 @@ export default function HomePage() {
               if (!day) return <div key={`e-${i}`} />;
 
               const dateStr = formatDate(new Date(year, month, day));
+                const hasEvent = events.some(e => e.startDate === dateStr);
+
+                const hasTrip = trips.some(t =>
+                    isDateInRange(dateStr, t.startDate, t.endDate)
+                );
+
+
                 const hasEventOrTrip =
                     events.some(e => e.startDate === dateStr) ||
                     trips.some(t =>
@@ -291,6 +298,9 @@ export default function HomePage() {
                 )
               );
 
+              const hasDeadline = todosOnDay.length > 0;
+
+
               const hasPendingTodo = todosOnDay.some(
                 (todo: any) => !todo.done
               );
@@ -302,6 +312,7 @@ export default function HomePage() {
               return (
                 <button
                   key={day}
+
                   onClick={() => setSelectedDate(dateStr)}
                   className={`relative h-10 rounded-xl text-sm ${
                       selectedDate === dateStr
@@ -316,15 +327,22 @@ export default function HomePage() {
                   }`}
                 >
                   {day}
+                    {/* DOT INDICATORS */}
+                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
+                        {hasEvent && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400"/>
+                        )}
 
-                  {/* TODO STATUS DOT */}
-                  {hasPendingTodo && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-red-400" />
-                  )}
+                        {hasTrip && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400"/>
+                        )}
 
-                  {!hasPendingTodo && hasCompletedTodo && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-400" />
-                  )}
+                        {hasDeadline && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400"/>
+                        )}
+                    </div>
+
+
                 </button>
               );
             })}
@@ -343,13 +361,14 @@ export default function HomePage() {
                     .filter(e => e.startDate === selectedDate)
                     .map(event => (
 
-                  <div
-                      key={event.id}
-                      onClick={() => router.push(`/event/${event.id}`)}
-                      className="p-4 mb-2 rounded-2xl bg-white/5 border border-white/10"
-                  >
-                    <p className="font-semibold">{event.name}</p>
-                  </div>
+                        <div
+                            key={event.id}
+                            onClick={() => router.push(`/event/${event.id}`)}
+                            className="p-4 mb-2 rounded-2xl bg-white/5 border border-white/10 border-l-4 border-l-blue-400"
+                        >
+                            <p className="font-semibold text-blue-300">{event.name}</p>
+                        </div>
+
               ))}
 
               {/* TRIPS */}
@@ -357,10 +376,11 @@ export default function HomePage() {
                   <div
                       key={trip.id}
                       onClick={() => router.push(`/trip/${trip.id}`)}
-                      className="p-4 mb-2 rounded-2xl bg-white/5 border border-white/10"
+                      className="p-4 mb-2 rounded-2xl bg-white/5 border border-white/10 border-l-4 border-l-purple-400"
                   >
-                    <p className="font-semibold">{trip.name}</p>
+                      <p className="font-semibold text-purple-300">{trip.name}</p>
                   </div>
+
               ))}
 
                 {events.filter(e => e.startDate === selectedDate).length === 0 &&
@@ -378,11 +398,12 @@ export default function HomePage() {
             <div
               key={i}
               onClick={() => router.push(`/trip/${todo.tripId}`)}
-              className={`p-4 mb-2 rounded-2xl border ${
-                todo.done
-                  ? "bg-green-500/20 border-green-500/30"
-                  : "bg-red-500/20 border-red-500/30"
+              className={`p-4 mb-2 rounded-2xl border border-l-4 ${
+                  todo.done
+                      ? "bg-green-500/20 border-green-500/30 border-l-green-400"
+                      : "bg-red-500/20 border-red-500/30 border-l-red-400"
               }`}
+
             >
                   <p
                     className={`font-semibold ${
