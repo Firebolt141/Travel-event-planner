@@ -25,8 +25,7 @@ import {
   PartyPopper,
   Plane,
   CheckSquare,
-  CheckCircle2,
-  Circle,
+  Heart,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -43,12 +42,19 @@ function isDateInRange(dateStr: string, startStr: string, endStr?: string) {
   return dateStr >= startStr && dateStr <= endStr;
 }
 
-type CreateMode = "pick" | "event" | "trip" | "todo";
+type CreateMode = "pick" | "event" | "trip" | "todo" | "wishlist";
 
 type GlobalTodo = {
   id: string;
   text: string;
   dueDate: string;
+  done: boolean;
+  createdAt?: string;
+};
+
+type WishlistItem = {
+  id: string;
+  text: string;
   done: boolean;
   createdAt?: string;
 };
@@ -59,12 +65,15 @@ export default function HomePage() {
   const [events, setEvents] = useState<any[]>([]);
   const [trips, setTrips] = useState<any[]>([]);
   const [globalTodos, setGlobalTodos] = useState<GlobalTodo[]>([]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
 
   const today = new Date();
+  const todayStr = formatDate(today);
+
   const [currentMonth, setCurrentMonth] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1)
   );
-  const [selectedDate, setSelectedDate] = useState(formatDate(today));
+  const [selectedDate, setSelectedDate] = useState(todayStr);
 
   // Create modal
   const [showModal, setShowModal] = useState(false);
@@ -88,6 +97,9 @@ export default function HomePage() {
   const [todoText, setTodoText] = useState("");
   const [todoDue, setTodoDue] = useState("");
 
+  // Wishlist inputs
+  const [wishText, setWishText] = useState("");
+
   const router = useRouter();
 
   function goPrevMonth() {
@@ -107,7 +119,6 @@ export default function HomePage() {
         setUser(firebaseUser);
         return;
       }
-
       const demo =
         typeof window !== "undefined" &&
         localStorage.getItem("demoUser") === "1";
@@ -123,10 +134,15 @@ export default function HomePage() {
       setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
 
-    // NEW: global todos
     const unsubTodos = onSnapshot(collection(db, "todos"), (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
       setGlobalTodos(list as GlobalTodo[]);
+    });
+
+    // NEW: wishlist
+    const unsubWishlist = onSnapshot(collection(db, "wishlist"), (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      setWishlist(list as WishlistItem[]);
     });
 
     return () => {
@@ -134,6 +150,7 @@ export default function HomePage() {
       unsubTrips();
       unsubEvents();
       unsubTodos();
+      unsubWishlist();
     };
   }, []);
 
@@ -150,9 +167,8 @@ export default function HomePage() {
     ];
   }, [firstDay, daysInMonth]);
 
-  const todayStr = formatDate(today);
+  /* ---------------- LISTS & FILTERS ---------------- */
 
-  // Trip todos for selected date (existing behavior)
   const tripTodosForDate = useMemo(() => {
     return (trips || []).flatMap((trip) =>
       (trip.todos || [])
@@ -166,7 +182,6 @@ export default function HomePage() {
     );
   }, [trips, selectedDate]);
 
-  // Global todos for selected date (new)
   const globalTodosForDate = useMemo(() => {
     return (globalTodos || [])
       .filter((t) => t.dueDate === selectedDate)
@@ -177,7 +192,6 @@ export default function HomePage() {
     return [...globalTodosForDate, ...tripTodosForDate];
   }, [globalTodosForDate, tripTodosForDate]);
 
-  // Top “soon” lists
   const eventsSoon = useMemo(() => {
     const sorted = [...(events || [])].sort((a, b) =>
       String(a.startDate || "").localeCompare(String(b.startDate || ""))
@@ -216,6 +230,15 @@ export default function HomePage() {
     return all.slice(0, 10);
   }, [trips, globalTodos]);
 
+  const wishlistSoon = useMemo(() => {
+    const sorted = [...(wishlist || [])].sort((a, b) =>
+      String(a.createdAt || "").localeCompare(String(b.createdAt || ""))
+    );
+    return sorted.slice(0, 10);
+  }, [wishlist]);
+
+  /* ---------------- ACTIONS ---------------- */
+
   function resetModalInputs() {
     setName("");
 
@@ -230,6 +253,8 @@ export default function HomePage() {
 
     setTodoText("");
     setTodoDue("");
+
+    setWishText("");
 
     setCreateMode("pick");
   }
@@ -286,11 +311,31 @@ export default function HomePage() {
     await deleteDoc(doc(db, "todos", todo.id));
   }
 
-  /* ---------------- RENDER ---------------- */
+  async function createWishlistItem() {
+    if (!wishText) return;
+
+    await addDoc(collection(db, "wishlist"), {
+      text: wishText,
+      done: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    setShowModal(false);
+    resetModalInputs();
+  }
+
+  async function toggleWishlistItem(item: WishlistItem) {
+    await updateDoc(doc(db, "wishlist", item.id), { done: !item.done });
+  }
+
+  async function deleteWishlistItem(item: WishlistItem) {
+    await deleteDoc(doc(db, "wishlist", item.id));
+  }
+
+  /* ---------------- LOGIN SCREEN ---------------- */
   if (!user) {
     return (
       <main className="min-h-screen bg-cute text-cute-ink relative overflow-hidden flex items-center justify-center px-5">
-        {/* Cute floating blobs */}
         <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-white/40 blur-2xl" />
         <div className="pointer-events-none absolute top-24 -right-24 w-80 h-80 rounded-full bg-white/35 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-24 left-1/3 w-96 h-96 rounded-full bg-white/30 blur-3xl" />
@@ -304,35 +349,11 @@ export default function HomePage() {
               <div className="min-w-0">
                 <p className="text-xs text-cute-muted">Welcome back</p>
                 <h1 className="text-4xl font-extrabold tracking-tight">
-                  Meet Asuka ✨
+                  Asuka ✨
                 </h1>
                 <p className="text-sm text-cute-muted mt-1">
-                  Cute planner for events, trips, and TODOs.
+                  Events • Trips • TODOs • Wishlist
                 </p>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-2">
-              <div className="row-cute cursor-default">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <PartyPopper size={18} />
-                  Events
-                </div>
-                <span className="text-xs text-cute-muted">meetups, dinners</span>
-              </div>
-              <div className="row-cute cursor-default">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <Plane size={18} />
-                  Trips
-                </div>
-                <span className="text-xs text-cute-muted">plans + people</span>
-              </div>
-              <div className="row-cute cursor-default">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckSquare size={18} />
-                  TODOs
-                </div>
-                <span className="text-xs text-cute-muted">deadlines</span>
               </div>
             </div>
 
@@ -345,13 +366,15 @@ export default function HomePage() {
             >
               Let’s go!
             </button>
-              
+
+            <p className="text-xs text-cute-muted mt-3">Demo login (local only).</p>
           </div>
         </div>
       </main>
     );
   }
 
+  /* ---------------- MAIN UI ---------------- */
   return (
     <div className="min-h-screen bg-cute text-cute-ink pb-28">
       {/* HEADER */}
@@ -371,193 +394,8 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* TOP SECTION: Events / Trips / TODOs */}
+      {/* 2) CALENDAR FIRST */}
       <section className="px-5">
-        <div className="grid gap-4 lg:grid-cols-3">
-          {/* EVENTS */}
-          <div className="card-cute">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="badge badge-blue">
-                  <Sparkles size={14} />
-                  Events
-                </span>
-                <span className="text-xs text-cute-muted">
-                  {events.length} total
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {eventsSoon.map((event) => (
-                <div
-                  key={event.id}
-                  className="row-cute"
-                  onClick={() => router.push(`/event/${event.id}`)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate">{event.name}</p>
-
-                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-cute-muted">
-                      <span className="inline-flex items-center gap-1">
-                        <Clock size={13} />
-                        {event.startDate} {event.startTime} → {event.endDate}{" "}
-                        {event.endTime}
-                      </span>
-
-                      {event.location ? (
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin size={13} />
-                          {event.location}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <button
-                    className="icon-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteDoc(doc(db, "events", event.id));
-                    }}
-                    aria-label="Delete event"
-                    title="Delete"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              ))}
-
-              {eventsSoon.length === 0 && (
-                <p className="text-sm text-cute-muted">No events yet</p>
-              )}
-            </div>
-          </div>
-
-          {/* TRIPS */}
-          <div className="card-cute">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="badge badge-purple">
-                  <Plane size={14} />
-                  Trips
-                </span>
-                <span className="text-xs text-cute-muted">
-                  {trips.length} total
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {tripsSoon.map((trip) => (
-                <div
-                  key={trip.id}
-                  className="row-cute"
-                  onClick={() => router.push(`/trip/${trip.id}`)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate">{trip.name}</p>
-                    <p className="text-xs text-cute-muted mt-1">
-                      {trip.startDate} → {trip.endDate}
-                    </p>
-                  </div>
-
-                  <button
-                    className="icon-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteDoc(doc(db, "trips", trip.id));
-                    }}
-                    aria-label="Delete trip"
-                    title="Delete"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              ))}
-
-              {tripsSoon.length === 0 && (
-                <p className="text-sm text-cute-muted">No trips yet</p>
-              )}
-            </div>
-          </div>
-
-          {/* TODOs (combined: global + trips) */}
-          <div className="card-cute">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="badge badge-pink">
-                  <CheckSquare size={14} />
-                  TODOs
-                </span>
-                <span className="text-xs text-cute-muted">
-                  global + trip deadlines
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {todosSoon.map((todo: any, i: number) => {
-                const isGlobal = todo.source === "global";
-
-                return (
-                  <div
-                    key={`${todo.source}-${todo.id || todo.tripId}-${todo.text}-${todo.dueDate}-${i}`}
-                    className={`row-cute ${todo.done ? "opacity-80" : ""}`}
-                    onClick={() => {
-                      if (isGlobal) toggleGlobalTodo(todo);
-                      else router.push(`/trip/${todo.tripId}`);
-                    }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="min-w-0">
-                      <p
-                        className={`font-semibold truncate ${
-                          todo.done ? "line-through text-cute-muted" : ""
-                        }`}
-                      >
-                        {todo.text}
-                      </p>
-
-                      <p className="text-xs text-cute-muted mt-1">
-                        {isGlobal
-                          ? `Global • Due: ${todo.dueDate}`
-                          : `${todo.tripName} • PIC: ${todo.pic} • Due: ${todo.dueDate}`}
-                      </p>
-                    </div>
-
-                    {isGlobal ? (
-                      <button
-                        className="icon-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteGlobalTodo(todo);
-                        }}
-                        aria-label="Delete todo"
-                        title="Delete"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    ) : null}
-                  </div>
-                );
-              })}
-
-              {todosSoon.length === 0 && (
-                <p className="text-sm text-cute-muted">No TODO deadlines</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CALENDAR + DETAILS */}
-      <section className="px-5 mt-5">
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           {/* Calendar */}
           <div className="card-cute">
@@ -612,6 +450,7 @@ export default function HomePage() {
 
                 const dateStr = formatDate(new Date(year, month, day));
                 const isSelected = selectedDate === dateStr;
+                const isPast = dateStr < todayStr;
 
                 const hasEvent = events.some((e) => e.startDate === dateStr);
                 const hasTrip = trips.some((t) =>
@@ -632,6 +471,19 @@ export default function HomePage() {
                 const hasCompletedTodo =
                   todosOnDay.length > 0 && !hasPendingTodo;
 
+                // 1) Past dates should be gray
+                const baseClass = isSelected
+                  ? "bg-cute-accent text-white"
+                  : isPast
+                  ? "bg-white/25 text-gray-400"
+                  : hasPendingTodo
+                  ? "bg-red-500/20"
+                  : hasCompletedTodo
+                  ? "bg-green-500/20"
+                  : hasEvent || hasTrip
+                  ? "bg-white/60"
+                  : "bg-white/35";
+
                 return (
                   <button
                     key={day}
@@ -639,16 +491,10 @@ export default function HomePage() {
                     className={[
                       "relative h-11 rounded-2xl text-sm font-semibold transition active:scale-[0.98]",
                       "shadow-[0_10px_30px_rgba(0,0,0,0.08)]",
-                      isSelected
-                        ? "bg-cute-accent text-white"
-                        : hasPendingTodo
-                        ? "bg-red-500/20"
-                        : hasCompletedTodo
-                        ? "bg-green-500/20"
-                        : hasEvent || hasTrip
-                        ? "bg-white/60"
-                        : "bg-white/35",
-                      "text-cute-ink",
+                      baseClass,
+                        isSelected ? "" : isPast ? "text-gray-400" : "text-cute-ink",
+                        isPast && !isSelected ? "opacity-80" : "",
+
                     ].join(" ")}
                   >
                     {day}
@@ -679,6 +525,9 @@ export default function HomePage() {
               </span>
               <span className="inline-flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-red-500" /> TODO deadline
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-gray-400" /> Past date
               </span>
             </div>
           </div>
@@ -807,6 +656,252 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* 3) LIST SECTIONS */}
+      <section className="px-5 mt-5">
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* EVENTS */}
+          <div className="card-cute">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="badge badge-blue">
+                  <Sparkles size={14} />
+                  Events
+                </span>
+                <span className="text-xs text-cute-muted">
+                  {events.length} total
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {eventsSoon.map((event) => (
+                <div
+                  key={event.id}
+                  className="row-cute"
+                  onClick={() => router.push(`/event/${event.id}`)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{event.name}</p>
+
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-cute-muted">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock size={13} />
+                        {event.startDate} {event.startTime} → {event.endDate}{" "}
+                        {event.endTime}
+                      </span>
+
+                      {event.location ? (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin size={13} />
+                          {event.location}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <button
+                    className="icon-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteDoc(doc(db, "events", event.id));
+                    }}
+                    aria-label="Delete event"
+                    title="Delete"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ))}
+
+              {eventsSoon.length === 0 && (
+                <p className="text-sm text-cute-muted">No events yet</p>
+              )}
+            </div>
+          </div>
+
+          {/* TRIPS */}
+          <div className="card-cute">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="badge badge-purple">
+                  <Plane size={14} />
+                  Trips
+                </span>
+                <span className="text-xs text-cute-muted">
+                  {trips.length} total
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {tripsSoon.map((trip) => (
+                <div
+                  key={trip.id}
+                  className="row-cute"
+                  onClick={() => router.push(`/trip/${trip.id}`)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{trip.name}</p>
+                    <p className="text-xs text-cute-muted mt-1">
+                      {trip.startDate} → {trip.endDate}
+                    </p>
+                  </div>
+
+                  <button
+                    className="icon-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteDoc(doc(db, "trips", trip.id));
+                    }}
+                    aria-label="Delete trip"
+                    title="Delete"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ))}
+
+              {tripsSoon.length === 0 && (
+                <p className="text-sm text-cute-muted">No trips yet</p>
+              )}
+            </div>
+          </div>
+
+          {/* TODOs */}
+          <div className="card-cute">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="badge badge-pink">
+                  <CheckSquare size={14} />
+                  TODOs
+                </span>
+                <span className="text-xs text-cute-muted">
+                  global + trip deadlines
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {todosSoon.map((todo: any, i: number) => {
+                const isGlobal = todo.source === "global";
+
+                return (
+                  <div
+                    key={`${todo.source}-${todo.id || todo.tripId}-${todo.text}-${todo.dueDate}-${i}`}
+                    className={`row-cute ${todo.done ? "opacity-80" : ""}`}
+                    onClick={() => {
+                      if (isGlobal) toggleGlobalTodo(todo);
+                      else router.push(`/trip/${todo.tripId}`);
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="min-w-0">
+                      <p
+                        className={`font-semibold truncate ${
+                          todo.done ? "line-through text-cute-muted" : ""
+                        }`}
+                      >
+                        {todo.text}
+                      </p>
+
+                      <p className="text-xs text-cute-muted mt-1">
+                        {isGlobal
+                          ? `Global • Due: ${todo.dueDate}`
+                          : `${todo.tripName} • PIC: ${todo.pic} • Due: ${todo.dueDate}`}
+                      </p>
+                    </div>
+
+                    {isGlobal ? (
+                      <button
+                        className="icon-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteGlobalTodo(todo);
+                        }}
+                        aria-label="Delete todo"
+                        title="Delete"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    ) : null}
+                  </div>
+                );
+              })}
+
+              {todosSoon.length === 0 && (
+                <p className="text-sm text-cute-muted">No TODO deadlines</p>
+              )}
+            </div>
+          </div>
+
+          {/* Wishlist */}
+          <div className="card-cute">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span
+                  className="badge"
+                  style={{ color: "#db2777" /* pink */ }}
+                >
+                  <Heart size={14} />
+                  Wishlist
+                </span>
+                <span className="text-xs text-cute-muted">
+                  {wishlist.length} items
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {wishlistSoon.map((w) => (
+                <div
+                  key={w.id}
+                  className={`row-cute ${w.done ? "opacity-80" : ""}`}
+                  onClick={() => toggleWishlistItem(w)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="min-w-0">
+                    <p
+                      className={`font-semibold truncate ${
+                        w.done ? "line-through text-cute-muted" : ""
+                      }`}
+                    >
+                      {w.text}
+                    </p>
+                    <p className="text-xs text-cute-muted mt-1">
+                      Someday ✨ (tap to mark done)
+                    </p>
+                  </div>
+
+                  <button
+                    className="icon-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteWishlistItem(w);
+                    }}
+                    aria-label="Delete wishlist item"
+                    title="Delete"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ))}
+
+              {wishlistSoon.length === 0 && (
+                <p className="text-sm text-cute-muted">
+                  Nothing yet — add a “someday” idea!
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Floating Add */}
       <button
         onClick={() => {
@@ -866,7 +961,7 @@ export default function HomePage() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   <button
                     className="pick-btn pick-event"
                     onClick={() => setCreateMode("event")}
@@ -894,13 +989,28 @@ export default function HomePage() {
                     onClick={() => setCreateMode("todo")}
                     style={{
                       boxShadow:
-                        "inset 4px 0 0 rgba(219, 39, 119, 0.65), 0 18px 45px rgba(0, 0, 0, 0.12)",
+                        "inset 4px 0 0 rgba(239, 68, 68, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
                     }}
                   >
                     <CheckSquare />
                     <div className="text-left">
                       <p className="font-extrabold">TODO</p>
                       <p className="text-xs opacity-80">deadline</p>
+                    </div>
+                  </button>
+
+                  <button
+                    className="pick-btn"
+                    onClick={() => setCreateMode("wishlist")}
+                    style={{
+                      boxShadow:
+                        "inset 4px 0 0 rgba(219, 39, 119, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
+                    }}
+                  >
+                    <Heart />
+                    <div className="text-left">
+                      <p className="font-extrabold">Wishlist</p>
+                      <p className="text-xs opacity-80">someday</p>
                     </div>
                   </button>
                 </div>
@@ -1094,9 +1204,43 @@ export default function HomePage() {
                   >
                     Add TODO
                   </button>
+                </div>
+              </>
+            )}
+
+            {/* Wishlist form */}
+            {createMode === "wishlist" && (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-lg font-extrabold tracking-tight text-cute-ink">
+                    Add Wishlist Item
+                  </p>
+                  <button
+                    className="mini-nav"
+                    onClick={() => setCreateMode("pick")}
+                  >
+                    ←
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <input
+                    placeholder="Something you want to do someday…"
+                    value={wishText}
+                    onChange={(e) => setWishText(e.target.value)}
+                    className="cute-input"
+                  />
+
+                  <button
+                    onClick={createWishlistItem}
+                    className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
+                    disabled={!wishText}
+                  >
+                    Add to Wishlist
+                  </button>
 
                   <p className="text-xs text-cute-muted">
-                    Tip: You can toggle done by tapping the TODO in the list.
+                    No deadline — just vibes ✨
                   </p>
                 </div>
               </>
