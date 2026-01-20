@@ -1,39 +1,202 @@
 @import "tailwindcss";
 
+/* Cute theme base (soft gradient + nicer typography) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --cute-bg1: #fff7fb;
+  --cute-bg2: #f2fbff;
+  --cute-ink: #1f2937; /* slate-ish */
+  --cute-muted: #6b7280;
+  --cute-accent: #7c3aed; /* violet */
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(135deg, var(--cute-bg1), var(--cute-bg2));
+  color: var(--cute-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
+/* --- Small animation you already used --- */
 @keyframes slideUp {
   from {
-    transform: translateY(100%);
+    transform: translateY(16px);
+    opacity: 0;
   }
   to {
     transform: translateY(0);
+    opacity: 1;
   }
 }
-
 .animate-slideUp {
-  animation: slideUp 0.25s ease-out;
+  animation: slideUp 0.2s ease-out;
+}
+
+/* --- Scrollbar (subtle + cute) --- */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.25);
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+*::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* --- Utility-ish classes used by page.tsx --- */
+.bg-cute {
+  background: linear-gradient(135deg, var(--cute-bg1), var(--cute-bg2));
+}
+.text-cute-ink {
+  color: var(--cute-ink);
+}
+.text-cute-muted {
+  color: var(--cute-muted);
+}
+.bg-cute-accent {
+  background: var(--cute-accent);
+}
+
+.shadow-cute {
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.12);
+}
+
+.card-cute {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  padding: 16px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.10);
+}
+
+.row-cute {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+.row-cute:hover {
+  opacity: 0.98;
+}
+.row-cute:active {
+  transform: scale(0.99);
+}
+
+.icon-btn {
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.badge-blue {
+  color: #1d4ed8;
+}
+.badge-purple {
+  color: #7c3aed;
+}
+.badge-pink {
+  color: #db2777;
+}
+.badge-mint {
+  color: #0f766e;
+}
+.badge-sun {
+  color: #b45309;
+}
+
+.pill {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0px;
+  padding: 8px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.mini-nav {
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.detail-pill {
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.65);
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.detail-blue {
+  box-shadow: inset 4px 0 0 rgba(29, 78, 216, 0.7);
+}
+.detail-purple {
+  box-shadow: inset 4px 0 0 rgba(124, 58, 237, 0.7);
+}
+.detail-red {
+  box-shadow: inset 4px 0 0 rgba(239, 68, 68, 0.65);
+  background: rgba(254, 226, 226, 0.6);
+}
+.detail-green {
+  box-shadow: inset 4px 0 0 rgba(34, 197, 94, 0.65);
+  background: rgba(220, 252, 231, 0.55);
+}
+
+.cute-input {
+  width: 100%;
+  padding: 12px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  outline: none;
+}
+
+.cute-label {
+  font-size: 12px;
+  color: var(--cute-muted);
+  margin-bottom: 6px;
+}
+
+.pick-btn {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.12);
+}
+.pick-btn:active {
+  transform: scale(0.99);
+}
+.pick-event {
+  box-shadow: inset 4px 0 0 rgba(29, 78, 216, 0.65), 0 18px 45px rgba(0, 0, 0, 0.12);
+}
+.pick-trip {
+  box-shadow: inset 4px 0 0 rgba(124, 58, 237, 0.65), 0 18px 45px rgba(0, 0, 0, 0.12);
 }

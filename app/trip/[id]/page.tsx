@@ -1,14 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  doc,
-  onSnapshot,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-} from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   ArrowLeft,
@@ -16,6 +10,10 @@ import {
   CheckCircle2,
   Circle,
   Users,
+  CalendarDays,
+  Sparkles,
+  Plane,
+  MapPin,
 } from "lucide-react";
 
 /* ---------------- TYPES ---------------- */
@@ -50,12 +48,15 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   const [todoPic, setTodoPic] = useState("");
   const [todoDue, setTodoDue] = useState("");
 
+  const collectionName = useMemo(
+    () => (itemType === "event" ? "events" : "trips"),
+    [itemType]
+  );
+
   /* ---------------- DATA ---------------- */
 
   useEffect(() => {
     if (!id) return;
-
-    const collectionName = itemType === "event" ? "events" : "trips";
 
     const unsub = onSnapshot(doc(db, collectionName, id), (snap) => {
       const data = snap.data();
@@ -65,12 +66,17 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
     });
 
     return () => unsub();
-  }, [id, itemType]);
+  }, [id, collectionName]);
 
   if (!item) {
     return (
-      <div className="min-h-screen bg-[#020617] text-white flex items-center justify-center">
-        Loading…
+      <div className="min-h-screen bg-cute text-cute-ink flex items-center justify-center px-5">
+        <div className="card-cute max-w-md w-full text-center">
+          <div className="mx-auto mb-3 w-14 h-14 rounded-3xl bg-white/70 shadow-cute flex items-center justify-center">
+            <Sparkles />
+          </div>
+          <p className="text-sm text-cute-muted">Loading…</p>
+        </div>
       </div>
     );
   }
@@ -80,8 +86,6 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   async function addParticipant() {
     if (!pName) return;
 
-    const collectionName = itemType === "event" ? "events" : "trips";
-
     await updateDoc(doc(db, collectionName, id), {
       participants: arrayUnion({ name: pName }),
     });
@@ -90,8 +94,6 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   }
 
   async function deleteParticipant(p: Participant) {
-    const collectionName = itemType === "event" ? "events" : "trips";
-
     await updateDoc(doc(db, collectionName, id), {
       participants: arrayRemove(p),
     });
@@ -109,8 +111,6 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
       dueDate: todoDue,
     };
 
-    const collectionName = itemType === "event" ? "events" : "trips";
-
     await updateDoc(doc(db, collectionName, id), {
       todos: arrayUnion(newTodo),
     });
@@ -121,8 +121,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   }
 
   async function toggleTodo(todo: Todo) {
-    const collectionName = itemType === "event" ? "events" : "trips";
-
+    // same behavior as before: remove old object, add toggled one
     await updateDoc(doc(db, collectionName, id), {
       todos: arrayRemove(todo),
     });
@@ -133,8 +132,6 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   }
 
   async function deleteTodo(todo: Todo) {
-    const collectionName = itemType === "event" ? "events" : "trips";
-
     await updateDoc(doc(db, collectionName, id), {
       todos: arrayRemove(todo),
     });
@@ -142,151 +139,228 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
 
   /* ---------------- UI ---------------- */
 
+  const isEvent = itemType === "event";
+
   return (
-    <div className="min-h-screen bg-[#020617] text-white p-5 pb-32">
+    <div className="min-h-screen bg-cute text-cute-ink pb-28">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()}>
-          <ArrowLeft />
-        </button>
-        <h1 className="text-2xl font-bold">{item.name}</h1>
-      </div>
+      <header className="px-5 pt-6 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <button className="mini-nav" onClick={() => router.push("/")} aria-label="Back">
+              <ArrowLeft size={18} />
+            </button>
 
-      {/* Dates */}
-      <div className="bg-white/5 rounded-2xl p-4 mb-4 border border-white/10">
-        <p className="text-sm text-gray-400">Dates</p>
-        <p className="font-semibold mt-1">
-          {item.startDate} → {item.endDate}
-        </p>
-      </div>
-
-      {/* Description (events + trips) */}
-      <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/10">
-        <p className="text-sm text-gray-400 mb-2">Description</p>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onBlur={async () => {
-            const collectionName = itemType === "event" ? "events" : "trips";
-            await updateDoc(doc(db, collectionName, id), { description });
-          }}
-          placeholder="Add description…"
-          className="w-full min-h-[80px] bg-transparent text-white outline-none resize-none"
-        />
-      </div>
-
-      {/* PARTICIPANTS (events + trips) */}
-      <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/10">
-        <div className="flex items-center gap-2 mb-3">
-          <Users size={16} />
-          <p className="text-sm text-gray-400">Participants</p>
-        </div>
-
-        <div className="space-y-2 mb-4">
-          {(item.participants || []).map((p: Participant, i: number) => (
-            <div
-              key={i}
-              className="flex justify-between items-center bg-black/30 p-3 rounded-xl"
-            >
-              <p className="font-medium">{p.name}</p>
-              <button onClick={() => deleteParticipant(p)}>
-                <Trash2 size={16} className="text-red-400" />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <input
-          placeholder="Name"
-          value={pName}
-          onChange={(e) => setPName(e.target.value)}
-          className="w-full p-2 mb-3 rounded-xl bg-white/10"
-        />
-
-        <button
-          onClick={addParticipant}
-          className="w-full py-3 rounded-xl bg-indigo-600"
-        >
-          Add Participant
-        </button>
-      </div>
-
-      {/* TODOS (events + trips) */}
-      <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-        <p className="text-sm text-gray-400 mb-3">TODOs</p>
-
-        <div className="space-y-3 mb-4">
-          {(item.todos || []).map((todo: Todo, i: number) => (
-            <div
-              key={i}
-              className="flex justify-between items-center bg-black/30 p-3 rounded-xl"
-            >
-              <div
-                className="flex items-center gap-3 flex-1 cursor-pointer"
-                onClick={() => toggleTodo(todo)}
-              >
-                {todo.done ? (
-                  <CheckCircle2 className="text-green-400" />
+            <div>
+              <p className="text-xs text-cute-muted">
+                {isEvent ? "Event details" : "Trip details"}
+              </p>
+              <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
+                {item.name}
+                {isEvent ? (
+                  <Sparkles className="opacity-80" size={20} />
                 ) : (
-                  <Circle className="text-gray-400" />
+                  <Plane className="opacity-80" size={20} />
                 )}
-
-                <div>
-                  <p
-                    className={`font-medium ${
-                      todo.done ? "line-through text-gray-400" : ""
-                    }`}
-                  >
-                    {todo.text}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    PIC: {todo.pic} • Due: {todo.dueDate}
-                  </p>
-                </div>
-              </div>
-
-              <button onClick={() => deleteTodo(todo)}>
-                <Trash2 size={16} className="text-red-400" />
-              </button>
+              </h1>
             </div>
-          ))}
+          </div>
+
+          <span className={`badge ${isEvent ? "badge-blue" : "badge-purple"}`}>
+            {isEvent ? <Sparkles size={14} /> : <Plane size={14} />}
+            {isEvent ? "Event" : "Trip"}
+          </span>
+        </div>
+      </header>
+
+      <main className="px-5">
+        {/* Dates */}
+        <div className="card-cute mb-4">
+          <div className="flex items-center justify-between">
+            <span className="badge badge-mint">
+              <CalendarDays size={14} />
+              Dates
+            </span>
+          </div>
+
+          <p className="mt-3 font-semibold">
+            {item.startDate} → {item.endDate}
+          </p>
+
+          {/* Optional: show location on event if present (won't break trips) */}
+          {isEvent && item.location ? (
+            <p className="text-sm text-cute-muted mt-2 inline-flex items-center gap-2">
+              <MapPin size={16} />
+              {item.location}
+            </p>
+          ) : null}
         </div>
 
-        <input
-          placeholder="Task"
-          value={todoText}
-          onChange={(e) => setTodoText(e.target.value)}
-          className="w-full p-2 mb-2 rounded-xl bg-white/10"
-        />
+        {/* Description */}
+        <div className="card-cute mb-4">
+          <p className="text-xs text-cute-muted mb-2">Description</p>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onBlur={async () => {
+              await updateDoc(doc(db, collectionName, id), { description });
+            }}
+            placeholder="Add description…"
+            className="cute-input min-h-[100px] resize-none"
+          />
+          <p className="text-xs text-cute-muted mt-2">
+            Tip: Click outside the box to save.
+          </p>
+        </div>
 
-        <select
-          value={todoPic}
-          onChange={(e) => setTodoPic(e.target.value)}
-          disabled={(item.participants || []).length === 0}
-          className="w-full mb-3 p-2 rounded-xl bg-black/40 text-white border border-white/10"
-        >
-          <option value="">Assign PIC</option>
-          {(item.participants || []).map((p: Participant, i: number) => (
-            <option key={i} value={p.name}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+        {/* Participants */}
+        <div className="card-cute mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="badge badge-sun">
+              <Users size={14} />
+              Participants
+            </span>
+            <span className="text-xs text-cute-muted">
+              {(item.participants || []).length} people
+            </span>
+          </div>
 
-        <input
-          type="date"
-          value={todoDue}
-          onChange={(e) => setTodoDue(e.target.value)}
-          className="w-full p-2 mb-3 rounded-xl bg-white/10"
-        />
+          <div className="space-y-2 mb-3">
+            {(item.participants || []).map((p: Participant, i: number) => (
+              <div key={i} className="row-cute">
+                <p className="font-semibold">{p.name}</p>
+                <button
+                  className="icon-btn"
+                  onClick={() => deleteParticipant(p)}
+                  aria-label="Remove participant"
+                  title="Remove"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            ))}
 
-        <button
-          onClick={addTodo}
-          className="w-full py-3 rounded-xl bg-indigo-600"
-        >
-          Add TODO
-        </button>
-      </div>
+            {(item.participants || []).length === 0 && (
+              <p className="text-sm text-cute-muted">No participants yet</p>
+            )}
+          </div>
+
+          <input
+            placeholder="Name"
+            value={pName}
+            onChange={(e) => setPName(e.target.value)}
+            className="cute-input mb-3"
+          />
+
+          <button
+            onClick={addParticipant}
+            className="w-full py-3 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
+            disabled={!pName}
+          >
+            Add Participant
+          </button>
+        </div>
+
+        {/* TODOs */}
+        <div className="card-cute">
+          <div className="flex items-center justify-between mb-3">
+            <span className="badge badge-pink">
+              <Circle size={14} />
+              TODOs
+            </span>
+            <span className="text-xs text-cute-muted">
+              {(item.todos || []).length} tasks
+            </span>
+          </div>
+
+          <div className="space-y-2 mb-4">
+            {(item.todos || []).map((todo: Todo, i: number) => (
+              <div key={i} className="row-cute">
+                <div
+                  className="flex items-start gap-3 flex-1 cursor-pointer"
+                  onClick={() => toggleTodo(todo)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  {todo.done ? (
+                    <CheckCircle2 className="mt-0.5" />
+                  ) : (
+                    <Circle className="mt-0.5 opacity-70" />
+                  )}
+
+                  <div className="min-w-0">
+                    <p
+                      className={`font-semibold truncate ${
+                        todo.done ? "line-through text-cute-muted" : ""
+                      }`}
+                    >
+                      {todo.text}
+                    </p>
+                    <p className="text-xs text-cute-muted mt-1">
+                      PIC: {todo.pic} • Due: {todo.dueDate}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  className="icon-btn"
+                  onClick={() => deleteTodo(todo)}
+                  aria-label="Delete todo"
+                  title="Delete"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            ))}
+
+            {(item.todos || []).length === 0 && (
+              <p className="text-sm text-cute-muted">No TODOs yet</p>
+            )}
+          </div>
+
+          <input
+            placeholder="Task"
+            value={todoText}
+            onChange={(e) => setTodoText(e.target.value)}
+            className="cute-input mb-2"
+          />
+
+          <select
+            value={todoPic}
+            onChange={(e) => setTodoPic(e.target.value)}
+            disabled={(item.participants || []).length === 0}
+            className="cute-input mb-2"
+          >
+            <option value="">Assign PIC</option>
+            {(item.participants || []).map((p: Participant, i: number) => (
+              <option key={i} value={p.name}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="date"
+            value={todoDue}
+            onChange={(e) => setTodoDue(e.target.value)}
+            className="cute-input mb-3"
+          />
+
+          <button
+            onClick={addTodo}
+            className="w-full py-3 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
+            disabled={!todoText || !todoPic || !todoDue}
+          >
+            Add TODO
+          </button>
+
+          {(item.participants || []).length === 0 && (
+            <p className="text-xs text-cute-muted mt-2">
+              Add at least 1 participant to assign PIC.
+            </p>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
