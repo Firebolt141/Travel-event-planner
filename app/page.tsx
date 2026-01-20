@@ -944,78 +944,105 @@ export default function HomePage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Picker */}
-            {createMode === "pick" && (
-              <>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-                    Add something ✨
-                  </p>
-                  <button
-                    className="mini-nav"
-                    onClick={() => {
-                      setShowModal(false);
-                      resetModalInputs();
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
+{createMode === "pick" && (
+  <>
+    <div className="flex items-center justify-between mb-3">
+      <p className="text-lg font-extrabold tracking-tight text-cute-ink">
+        Add something ✨
+      </p>
+      <button
+        className="mini-nav"
+        onClick={() => {
+          setShowModal(false);
+          resetModalInputs();
+        }}
+      >
+        ✕
+      </button>
+    </div>
 
-                <div className="grid grid-cols-4 gap-3">
-                  <button
-                    className="pick-btn pick-event"
-                    onClick={() => setCreateMode("event")}
-                  >
-                    <Sparkles />
-                    <div className="text-left">
-                      <p className="font-extrabold">Event</p>
-                      <p className="text-xs opacity-80">meetup</p>
-                    </div>
-                  </button>
+    {/* 2x2 grid */}
+    <div className="grid grid-cols-2 gap-3">
+      {/* Event */}
+      <button
+        className="pick-btn pick-event"
+        onClick={() => setCreateMode("event")}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+            <Sparkles />
+          </div>
+          <div className="text-left">
+            <p className="font-extrabold leading-tight">Event</p>
+            <p className="text-xs opacity-80">meetups, plans</p>
+          </div>
+        </div>
+      </button>
 
-                  <button
-                    className="pick-btn pick-trip"
-                    onClick={() => setCreateMode("trip")}
-                  >
-                    <Plane />
-                    <div className="text-left">
-                      <p className="font-extrabold">Trip</p>
-                      <p className="text-xs opacity-80">travel</p>
-                    </div>
-                  </button>
+      {/* Trip */}
+      <button
+        className="pick-btn pick-trip"
+        onClick={() => setCreateMode("trip")}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+            <Plane />
+          </div>
+          <div className="text-left">
+            <p className="font-extrabold leading-tight">Trip</p>
+            <p className="text-xs opacity-80">travel plan</p>
+          </div>
+        </div>
+      </button>
 
-                  <button
-                    className="pick-btn"
-                    onClick={() => setCreateMode("todo")}
-                    style={{
-                      boxShadow:
-                        "inset 4px 0 0 rgba(239, 68, 68, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
-                    }}
-                  >
-                    <CheckSquare />
-                    <div className="text-left">
-                      <p className="font-extrabold">TODO</p>
-                      <p className="text-xs opacity-80">deadline</p>
-                    </div>
-                  </button>
+      {/* TODO */}
+      <button
+        className="pick-btn"
+        onClick={() => setCreateMode("todo")}
+        style={{
+          boxShadow:
+            "inset 4px 0 0 rgba(239, 68, 68, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+            <CheckSquare />
+          </div>
+          <div className="text-left">
+            <p className="font-extrabold leading-tight">TODO</p>
+            <p className="text-xs opacity-80">has deadline</p>
+          </div>
+        </div>
+      </button>
 
-                  <button
-                    className="pick-btn"
-                    onClick={() => setCreateMode("wishlist")}
-                    style={{
-                      boxShadow:
-                        "inset 4px 0 0 rgba(219, 39, 119, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
-                    }}
-                  >
-                    <Heart />
-                    <div className="text-left">
-                      <p className="font-extrabold">Wishlist</p>
-                      <p className="text-xs opacity-80">someday</p>
-                    </div>
-                  </button>
-                </div>
-              </>
-            )}
+      {/* Wishlist */}
+      <button
+        className="pick-btn"
+        onClick={() => setCreateMode("wishlist")}
+        style={{
+          boxShadow:
+            "inset 4px 0 0 rgba(219, 39, 119, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+            <Heart />
+          </div>
+          <div className="text-left">
+            <p className="font-extrabold leading-tight">Wishlist</p>
+            <p className="text-xs opacity-80">someday ✨</p>
+          </div>
+        </div>
+      </button>
+    </div>
+
+    {/* tiny hint */}
+    <p className="text-xs text-cute-muted mt-3">
+      Tip: TODO = deadline. Wishlist = no deadline.
+    </p>
+  </>
+)}
+
 
             {/* Event form */}
             {createMode === "event" && (
