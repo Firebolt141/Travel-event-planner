@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
@@ -39,14 +39,13 @@ function formatDate(date: Date) {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
-
 function isDateInRange(dateStr: string, startStr: string, endStr?: string) {
   if (!endStr) return dateStr === startStr;
   return dateStr >= startStr && dateStr <= endStr;
 }
 
+/* ---------------- TYPES ---------------- */
 type CreateMode = "pick" | "event" | "trip" | "todo" | "wishlist";
-
 type GlobalTodo = {
   id: string;
   text: string;
@@ -54,7 +53,6 @@ type GlobalTodo = {
   done: boolean;
   createdAt?: string;
 };
-
 type WishlistItem = {
   id: string;
   text: string;
@@ -69,7 +67,6 @@ function seasonEmoji(monthIndex0: number) {
   if (monthIndex0 === 8 || monthIndex0 === 9 || monthIndex0 === 10) return "🍁";
   return "❄️";
 }
-
 function dailyMood(todayStr: string) {
   const moods = [
     "Small steps are enough 🌿",
@@ -86,66 +83,7 @@ function dailyMood(todayStr: string) {
   return moods[hash % moods.length];
 }
 
-/* ---------------- CUTE ANIMALS ---------------- */
-function SleepyCat({ size = 96, label = "Sleepy cat" }: { size?: number; label?: string }) {
-  // Tiny SVG cat with blink + float
-  return (
-    <div className="cute-float" aria-label={label} title={label}>
-      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-        <path
-          d="M30 64c0-18 12-30 30-30s30 12 30 30-12 34-30 34-30-16-30-34Z"
-          fill="rgba(255,255,255,0.85)"
-          stroke="rgba(17,24,39,0.12)"
-        />
-        <path d="M38 40l-10 12c-2 2-1 6 2 6h12" fill="rgba(255,255,255,0.85)" stroke="rgba(17,24,39,0.12)" />
-        <path d="M82 40l10 12c2 2 1 6-2 6H78" fill="rgba(255,255,255,0.85)" stroke="rgba(17,24,39,0.12)" />
-        <g className="buddy-blink" stroke="rgba(31,41,55,0.65)" strokeWidth="4" strokeLinecap="round">
-          <path d="M46 66c6 4 12 4 18 0" />
-          <path d="M56 66c6 4 12 4 18 0" />
-        </g>
-        <path d="M60 74l-2 2 2 2 2-2-2-2Z" fill="rgba(244,114,182,0.9)" />
-        <path d="M60 78c-6 6-12 6-18 0" stroke="rgba(31,41,55,0.5)" strokeWidth="3" strokeLinecap="round" />
-        <path d="M26 84c10 6 20 6 30 0" stroke="rgba(167,139,250,0.7)" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
-      </svg>
-    </div>
-  );
-}
-
-function DreamBunny({ size = 96, label = "Dream bunny" }: { size?: number; label?: string }) {
-  return (
-    <div className="cute-float" aria-label={label} title={label}>
-      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-        <path d="M44 30c-2-10 4-18 12-18s14 8 12 18" stroke="rgba(244,114,182,0.75)" strokeWidth="6" strokeLinecap="round" />
-        <path d="M52 30c-2-10 4-18 12-18s14 8 12 18" stroke="rgba(167,139,250,0.75)" strokeWidth="6" strokeLinecap="round" />
-        <ellipse cx="60" cy="68" rx="30" ry="26" fill="rgba(255,255,255,0.85)" stroke="rgba(17,24,39,0.12)" />
-        <g className="buddy-blink" stroke="rgba(31,41,55,0.65)" strokeWidth="4" strokeLinecap="round">
-          <path d="M48 66c6 4 12 4 18 0" />
-          <path d="M56 66c6 4 12 4 18 0" />
-        </g>
-        <circle cx="60" cy="74" r="3" fill="rgba(244,114,182,0.9)" />
-        <path d="M60 78c-4 4-8 4-12 0" stroke="rgba(31,41,55,0.5)" strokeWidth="3" strokeLinecap="round" />
-        <path d="M86 46l3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6Z" fill="rgba(250,204,21,0.9)" opacity="0.9" />
-      </svg>
-    </div>
-  );
-}
-
-function TinyBird({ size = 96, label = "Tiny bird" }: { size?: number; label?: string }) {
-  return (
-    <div className="cute-float" aria-label={label} title={label}>
-      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-        <ellipse cx="56" cy="70" rx="26" ry="22" fill="rgba(255,255,255,0.85)" stroke="rgba(17,24,39,0.12)" />
-        <circle cx="78" cy="66" r="12" fill="rgba(255,255,255,0.85)" stroke="rgba(17,24,39,0.12)" />
-        <path d="M90 68l14 6-14 6" fill="rgba(250,204,21,0.9)" />
-        <g className="buddy-blink" stroke="rgba(31,41,55,0.65)" strokeWidth="4" strokeLinecap="round">
-          <path d="M72 66c5 3 10 3 15 0" />
-        </g>
-        <path d="M46 84c10 8 22 8 32 0" stroke="rgba(96,165,250,0.65)" strokeWidth="4" strokeLinecap="round" opacity="0.85" />
-      </svg>
-    </div>
-  );
-}
-
+/* ---------------- CONFETTI ---------------- */
 function ConfettiBurst({ show }: { show: boolean }) {
   const pieces = useMemo(() => {
     return Array.from({ length: 22 }, (_, i) => ({
@@ -155,7 +93,6 @@ function ConfettiBurst({ show }: { show: boolean }) {
       bg: `hsl(${Math.floor(Math.random() * 360)} 85% 70%)`,
     }));
   }, []);
-
   if (!show) return null;
 
   return (
@@ -178,6 +115,7 @@ function ConfettiBurst({ show }: { show: boolean }) {
 /* ---------------- PAGE ---------------- */
 export default function HomePage() {
   const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
 
   const [user, setUser] = useState<any>(null);
 
@@ -209,8 +147,6 @@ export default function HomePage() {
   const [todoDue, setTodoDue] = useState("");
 
   const [wishText, setWishText] = useState("");
-
-  const router = useRouter();
 
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimer = useRef<number | null>(null);
@@ -294,7 +230,6 @@ export default function HomePage() {
         tripId: trip.id,
       }))
     );
-
     const fromGlobal = (globalTodos || []).map((t) => ({ ...t, source: "global" as const }));
     const all = [...fromGlobal, ...fromTrips];
     all.sort((a: any, b: any) => String(a.dueDate || "").localeCompare(String(b.dueDate || "")));
@@ -406,19 +341,28 @@ export default function HomePage() {
   }
 
   async function toggleWishlistItem(item: WishlistItem) {
-    const nextDone = !item.done;
-    await updateDoc(doc(db, "wishlist", item.id), { done: nextDone });
+    await updateDoc(doc(db, "wishlist", item.id), { done: !item.done });
   }
-
   async function deleteWishlistItem(item: WishlistItem) {
     await deleteDoc(doc(db, "wishlist", item.id));
   }
+
+  // Delay fix helpers: prefetch + transition
+  const goEvent = (id: string) => startTransition(() => router.push(`/event/${id}`));
+  const goTrip = (id: string) => startTransition(() => router.push(`/trip/${id}`));
+  const prefetchEvent = (id: string) => router.prefetch(`/event/${id}`);
+  const prefetchTrip = (id: string) => router.prefetch(`/trip/${id}`);
 
   const headerMood = dailyMood(todayStr);
   const season = seasonEmoji(today.getMonth());
 
   /* ---------------- LOGIN ---------------- */
   if (!user) {
+    const monaSrc =
+      theme === "night"
+        ? "https://github.githubassets.com/images/mona-loading-dark.gif"
+        : "https://github.githubassets.com/images/mona-loading-default.gif";
+
     return (
       <main className="min-h-screen bg-cute text-cute-ink relative overflow-hidden flex items-center justify-center px-5">
         <ConfettiBurst show={showConfetti} />
@@ -442,10 +386,17 @@ export default function HomePage() {
             </div>
 
             <div className="mt-4 flex items-center justify-center">
-              <SleepyCat size={140} label="Sleepy cat buddy" />
+              <img
+                src={monaSrc}
+                alt="Mona loading"
+                width={150}
+                height={150}
+                className="cute-float"
+                style={{ imageRendering: "auto" }}
+              />
             </div>
 
-            <p className="text-sm text-cute-muted mt-2 text-center">Tomorrow’s sunshine vibes 🌤️</p>
+            <p className="text-sm text-cute-muted mt-2 text-center">Catching Z’s… zZz 🌙</p>
 
             <button
               className="mt-5 w-full px-8 py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute hover:opacity-95 active:scale-[0.99] transition"
@@ -595,7 +546,15 @@ export default function HomePage() {
               <p className="text-xs text-cute-muted mb-2">EVENTS & TRIPS</p>
 
               {events.filter((e) => e.startDate === selectedDate).map((event) => (
-                <div key={event.id} onClick={() => router.push(`/event/${event.id}`)} className="detail-pill detail-blue" role="button" tabIndex={0}>
+                <div
+                  key={event.id}
+                  onMouseEnter={() => prefetchEvent(event.id)}
+                  onTouchStart={() => prefetchEvent(event.id)}
+                  onClick={() => goEvent(event.id)}
+                  className="detail-pill detail-blue"
+                  role="button"
+                  tabIndex={0}
+                >
                   <p className="font-semibold">{event.name}</p>
                   <p className="text-xs opacity-80">
                     {event.startTime} → {event.endTime}
@@ -605,7 +564,15 @@ export default function HomePage() {
               ))}
 
               {trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate)).map((trip) => (
-                <div key={trip.id} onClick={() => router.push(`/trip/${trip.id}`)} className="detail-pill detail-purple" role="button" tabIndex={0}>
+                <div
+                  key={trip.id}
+                  onMouseEnter={() => prefetchTrip(trip.id)}
+                  onTouchStart={() => prefetchTrip(trip.id)}
+                  onClick={() => goTrip(trip.id)}
+                  className="detail-pill detail-purple"
+                  role="button"
+                  tabIndex={0}
+                >
                   <p className="font-semibold">{trip.name}</p>
                   <p className="text-xs opacity-80">
                     {trip.startDate} → {trip.endDate}
@@ -615,12 +582,7 @@ export default function HomePage() {
 
               {events.filter((e) => e.startDate === selectedDate).length === 0 &&
                 trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate)).length === 0 && (
-                  <div className="mt-3 text-center">
-                    <div className="flex justify-center">
-                      <TinyBird size={90} />
-                    </div>
-                    <p className="text-sm text-cute-muted mt-2">Nothing planned here yet ✨</p>
-                  </div>
+                  <p className="text-sm text-cute-muted mt-2">Nothing planned here yet ✨</p>
                 )}
             </div>
 
@@ -632,7 +594,9 @@ export default function HomePage() {
                 return (
                   <div
                     key={`${todo.source}-${todo.id || todo.tripId}-${todo.text}-${i}`}
-                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : router.push(`/trip/${todo.tripId}`))}
+                    onMouseEnter={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
+                    onTouchStart={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
+                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : goTrip(todo.tripId))}
                     className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
                     role="button"
                     tabIndex={0}
@@ -664,12 +628,7 @@ export default function HomePage() {
               })}
 
               {todosForDateCombined.length === 0 && (
-                <div className="mt-3 text-center">
-                  <div className="flex justify-center">
-                    <SleepyCat size={88} />
-                  </div>
-                  <p className="text-sm text-cute-muted mt-2">No deadlines — cozy day ☕</p>
-                </div>
+                <p className="text-sm text-cute-muted mt-2">No deadlines — cozy day ☕</p>
               )}
             </div>
           </div>
@@ -693,7 +652,15 @@ export default function HomePage() {
 
             <div className="space-y-2">
               {eventsSoon.map((event) => (
-                <div key={event.id} className="row-cute" onClick={() => router.push(`/event/${event.id}`)} role="button" tabIndex={0}>
+                <div
+                  key={event.id}
+                  className="row-cute"
+                  onMouseEnter={() => prefetchEvent(event.id)}
+                  onTouchStart={() => prefetchEvent(event.id)}
+                  onClick={() => goEvent(event.id)}
+                  role="button"
+                  tabIndex={0}
+                >
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{event.name}</p>
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-cute-muted">
@@ -725,10 +692,7 @@ export default function HomePage() {
               ))}
 
               {eventsSoon.length === 0 && (
-                <div className="mt-2 text-center">
-                  <DreamBunny size={88} />
-                  <p className="text-sm text-cute-muted mt-2">No events yet — add a little joy ✨</p>
-                </div>
+                <p className="text-sm text-cute-muted mt-2">No events yet — add a little joy ✨</p>
               )}
             </div>
           </div>
@@ -747,7 +711,15 @@ export default function HomePage() {
 
             <div className="space-y-2">
               {tripsSoon.map((trip) => (
-                <div key={trip.id} className="row-cute" onClick={() => router.push(`/trip/${trip.id}`)} role="button" tabIndex={0}>
+                <div
+                  key={trip.id}
+                  className="row-cute"
+                  onMouseEnter={() => prefetchTrip(trip.id)}
+                  onTouchStart={() => prefetchTrip(trip.id)}
+                  onClick={() => goTrip(trip.id)}
+                  role="button"
+                  tabIndex={0}
+                >
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{trip.name}</p>
                     <p className="text-xs text-cute-muted mt-1">
@@ -770,10 +742,7 @@ export default function HomePage() {
               ))}
 
               {tripsSoon.length === 0 && (
-                <div className="mt-2 text-center">
-                  <TinyBird size={88} />
-                  <p className="text-sm text-cute-muted mt-2">No trips yet — someday? 🧳</p>
-                </div>
+                <p className="text-sm text-cute-muted mt-2">No trips yet — someday? 🧳</p>
               )}
             </div>
           </div>
@@ -797,7 +766,9 @@ export default function HomePage() {
                   <div
                     key={`${todo.source}-${todo.id || todo.tripId}-${todo.text}-${todo.dueDate}-${i}`}
                     className={`row-cute ${todo.done ? "opacity-80" : ""}`}
-                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : router.push(`/trip/${todo.tripId}`))}
+                    onMouseEnter={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
+                    onTouchStart={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
+                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : goTrip(todo.tripId))}
                     role="button"
                     tabIndex={0}
                   >
@@ -826,10 +797,7 @@ export default function HomePage() {
               })}
 
               {todosSoon.length === 0 && (
-                <div className="mt-2 text-center">
-                  <SleepyCat size={88} />
-                  <p className="text-sm text-cute-muted mt-2">No deadlines — breathe 🌿</p>
-                </div>
+                <p className="text-sm text-cute-muted mt-2">No deadlines — breathe 🌿</p>
               )}
             </div>
           </div>
@@ -875,10 +843,7 @@ export default function HomePage() {
               ))}
 
               {wishlistSoon.length === 0 && (
-                <div className="mt-2 text-center">
-                  <DreamBunny size={88} />
-                  <p className="text-sm text-cute-muted mt-2">Nothing here yet — add a little dream 💭</p>
-                </div>
+                <p className="text-sm text-cute-muted mt-2">Nothing here yet — add a little dream 💭</p>
               )}
             </div>
           </div>
@@ -899,14 +864,14 @@ export default function HomePage() {
       </button>
 
       {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/50 backdrop-blur-md border-t border-white/60 py-4 flex justify-center">
+      <nav className="fixed bottom-0 left-0 right-0 py-4 flex justify-center nav-cute">
         <button
           onClick={async () => {
             localStorage.removeItem("demoUser");
             await signOut(auth);
             setUser(null);
           }}
-          className="px-4 py-2 rounded-2xl bg-white/70 shadow-cute hover:opacity-95 active:scale-[0.99] transition inline-flex items-center gap-2"
+          className="px-4 py-2 rounded-2xl shadow-cute hover:opacity-95 active:scale-[0.99] transition inline-flex items-center gap-2 nav-btn"
         >
           <LogOut size={18} />
           <span className="font-semibold text-sm">See you later</span>
@@ -987,7 +952,6 @@ export default function HomePage() {
               </>
             )}
 
-            {/* Forms (same as before, readable in night mode now) */}
             {createMode !== "pick" && (
               <div className="mt-2">
                 <button className="mini-nav mb-3" onClick={() => setCreateMode("pick")}>
