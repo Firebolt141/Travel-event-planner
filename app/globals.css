@@ -367,3 +367,16 @@ html[data-theme="night"] .login-blob.blob3 {
   animation: confetti-fall 1100ms ease-out forwards;
   box-shadow: 0 10px 25px rgba(0,0,0,0.14);
 }
+
+/* =============== MONA THEME SWITCH (Option 1) =============== */
+/* Show day GIF by default */
+.mona-night {
+  display: none;
+}
+/* If night theme, swap */
+html[data-theme="night"] .mona-day {
+  display: none;
+}
+html[data-theme="night"] .mona-night {
+  display: inline-block;
+}
