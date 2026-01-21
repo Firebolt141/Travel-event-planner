@@ -34,6 +34,14 @@ html[data-theme="night"] {
   --nav-btn-border: rgba(255, 255, 255, 0.12);
 }
 
+/* =============== IMPORTANT: DISABLE NATIVE PULL-TO-REFRESH (where supported) =============== */
+/* This prevents Chrome/Android/WebView pull-to-refresh indicator overlays.
+   iOS Safari may still show native behavior (Apple doesn't fully support this control). */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 body {
   background: linear-gradient(135deg, var(--cute-bg1), var(--cute-bg2));
   color: var(--cute-ink);
@@ -368,12 +376,10 @@ html[data-theme="night"] .login-blob.blob3 {
   box-shadow: 0 10px 25px rgba(0,0,0,0.14);
 }
 
-/* =============== MONA THEME SWITCH (Option 1) =============== */
-/* Show day GIF by default */
+/* =============== MONA THEME SWITCH =============== */
 .mona-night {
   display: none;
 }
-/* If night theme, swap */
 html[data-theme="night"] .mona-day {
   display: none;
 }
