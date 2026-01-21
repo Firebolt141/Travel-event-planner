@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
@@ -26,6 +26,8 @@ import {
   Plane,
   CheckSquare,
   Heart,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -43,6 +45,7 @@ function isDateInRange(dateStr: string, startStr: string, endStr?: string) {
 }
 
 type CreateMode = "pick" | "event" | "trip" | "todo" | "wishlist";
+type ThemeMode = "day" | "night";
 
 type GlobalTodo = {
   id: string;
@@ -59,6 +62,158 @@ type WishlistItem = {
   createdAt?: string;
 };
 
+/* ---------------- SMALL DELIGHT COMPONENTS ---------------- */
+
+function seasonEmoji(monthIndex0: number) {
+  // 0=Jan ... 11=Dec
+  if (monthIndex0 === 2 || monthIndex0 === 3 || monthIndex0 === 4) return "🌸";
+  if (monthIndex0 === 5 || monthIndex0 === 6 || monthIndex0 === 7) return "☀️";
+  if (monthIndex0 === 8 || monthIndex0 === 9 || monthIndex0 === 10) return "🍁";
+  return "❄️";
+}
+
+function dailyMood(todayStr: string) {
+  const moods = [
+    "Small steps are enough 🌿",
+    "Plan something gentle today ☁️",
+    "A little progress is still progress ✨",
+    "Treat yourself kindly today ☕",
+    "One cute plan at a time 🫶",
+    "Make space for fun too 🌈",
+    "You’re doing great — quietly 🌙",
+    "Today feels like a good day to plan 🌤️",
+  ];
+  // deterministic index from date string
+  let hash = 0;
+  for (let i = 0; i < todayStr.length; i++) hash = (hash * 31 + todayStr.charCodeAt(i)) >>> 0;
+  return moods[hash % moods.length];
+}
+
+function SunshineBuddy({
+  size = 120,
+  label = "Asuka buddy",
+}: {
+  size?: number;
+  label?: string;
+}) {
+  // Simple “sun + sleepy cat” SVG with gentle float + blink (CSS classes from globals.css)
+  return (
+    <div className="cute-float" aria-label={label} title={label}>
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 140 140"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ display: "block" }}
+      >
+        {/* soft blob */}
+        <path
+          d="M26 66c0-28 18-46 44-46s44 18 44 46-18 54-44 54-44-26-44-54Z"
+          fill="rgba(255,255,255,0.55)"
+        />
+        {/* sun */}
+        <circle cx="92" cy="44" r="18" fill="rgba(250,204,21,0.95)" />
+        <circle cx="92" cy="44" r="18" fill="url(#g1)" opacity="0.35" />
+        {/* rays */}
+        <g opacity="0.75" stroke="rgba(250,204,21,0.9)" strokeWidth="4" strokeLinecap="round">
+          <path d="M92 16v6" />
+          <path d="M92 66v6" />
+          <path d="M64 44h6" />
+          <path d="M114 44h6" />
+          <path d="M73 25l4 4" />
+          <path d="M107 59l4 4" />
+          <path d="M73 63l4-4" />
+          <path d="M107 29l4-4" />
+        </g>
+
+        {/* cat head */}
+        <path
+          d="M44 78c0-18 12-30 26-30s26 12 26 30-12 34-26 34-26-16-26-34Z"
+          fill="rgba(255,255,255,0.92)"
+          stroke="rgba(17,24,39,0.10)"
+        />
+        {/* ears */}
+        <path
+          d="M52 54l-8 10c-2 2-1 6 2 6h10"
+          fill="rgba(255,255,255,0.92)"
+          stroke="rgba(17,24,39,0.10)"
+        />
+        <path
+          d="M88 54l8 10c2 2 1 6-2 6H84"
+          fill="rgba(255,255,255,0.92)"
+          stroke="rgba(17,24,39,0.10)"
+        />
+
+        {/* eyes (blink group) */}
+        <g className="buddy-blink" opacity="0.9" stroke="rgba(31,41,55,0.75)" strokeWidth="4" strokeLinecap="round">
+          <path d="M58 78c4 3 8 3 12 0" />
+          <path d="M70 78c4 3 8 3 12 0" />
+        </g>
+
+        {/* nose + mouth */}
+        <path d="M70 86l-2 2 2 2 2-2-2-2Z" fill="rgba(244,114,182,0.9)" />
+        <path
+          d="M70 90c-6 6-12 6-18 0"
+          stroke="rgba(31,41,55,0.55)"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+
+        {/* sparkle */}
+        <path
+          d="M44 40l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z"
+          fill="rgba(244,114,182,0.85)"
+          opacity="0.9"
+        />
+
+        <defs>
+          <radialGradient id="g1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(90 38) rotate(90) scale(26)">
+            <stop stopColor="white" />
+            <stop offset="1" stopColor="white" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
+function ConfettiBurst({ show }: { show: boolean }) {
+  const pieces = useMemo(() => {
+    // random-ish positions; client-only anyway
+    return Array.from({ length: 22 }, (_, i) => ({
+      id: i,
+      left: Math.round(Math.random() * 92) + 4, // 4%..96%
+      delay: Math.random() * 180,
+      // avoid hardcoded colors: use CSS background via currentColor + opacity with varied hues? (we'll just use pastel via HSL here)
+      bg: `hsl(${Math.floor(Math.random() * 360)} 85% 70%)`,
+    }));
+  }, []);
+
+  if (!show) return null;
+
+  return (
+    <div
+      className="pointer-events-none fixed inset-0 z-[60] overflow-hidden"
+      aria-hidden="true"
+    >
+      {pieces.map((p) => (
+        <span
+          key={p.id}
+          className="confetti-piece"
+          style={{
+            left: `${p.left}%`,
+            background: p.bg,
+            animationDelay: `${p.delay}ms`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- PAGE ---------------- */
+
 export default function HomePage() {
   const [user, setUser] = useState<any>(null);
 
@@ -69,6 +224,8 @@ export default function HomePage() {
 
   const today = new Date();
   const todayStr = formatDate(today);
+
+  const [theme, setTheme] = useState<ThemeMode>("day");
 
   const [currentMonth, setCurrentMonth] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1)
@@ -102,6 +259,9 @@ export default function HomePage() {
 
   const router = useRouter();
 
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiTimer = useRef<number | null>(null);
+
   function goPrevMonth() {
     setCurrentMonth(
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
@@ -113,6 +273,19 @@ export default function HomePage() {
     );
   }
 
+  // Theme init + apply
+  useEffect(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("asukaTheme") : null;
+    const initial: ThemeMode = saved === "night" ? "night" : "day";
+    setTheme(initial);
+    document.documentElement.dataset.theme = initial;
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    if (typeof window !== "undefined") localStorage.setItem("asukaTheme", theme);
+  }, [theme]);
+
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -120,8 +293,7 @@ export default function HomePage() {
         return;
       }
       const demo =
-        typeof window !== "undefined" &&
-        localStorage.getItem("demoUser") === "1";
+        typeof window !== "undefined" && localStorage.getItem("demoUser") === "1";
       if (demo) setUser({ name: "Demo User", demo: true });
       else setUser(null);
     });
@@ -139,7 +311,6 @@ export default function HomePage() {
       setGlobalTodos(list as GlobalTodo[]);
     });
 
-    // NEW: wishlist
     const unsubWishlist = onSnapshot(collection(db, "wishlist"), (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
       setWishlist(list as WishlistItem[]);
@@ -168,7 +339,6 @@ export default function HomePage() {
   }, [firstDay, daysInMonth]);
 
   /* ---------------- LISTS & FILTERS ---------------- */
-
   const tripTodosForDate = useMemo(() => {
     return (trips || []).flatMap((trip) =>
       (trip.todos || [])
@@ -191,20 +361,6 @@ export default function HomePage() {
   const todosForDateCombined = useMemo(() => {
     return [...globalTodosForDate, ...tripTodosForDate];
   }, [globalTodosForDate, tripTodosForDate]);
-
-  const eventsSoon = useMemo(() => {
-    const sorted = [...(events || [])].sort((a, b) =>
-      String(a.startDate || "").localeCompare(String(b.startDate || ""))
-    );
-    return sorted.slice(0, 6);
-  }, [events]);
-
-  const tripsSoon = useMemo(() => {
-    const sorted = [...(trips || [])].sort((a, b) =>
-      String(a.startDate || "").localeCompare(String(b.startDate || ""))
-    );
-    return sorted.slice(0, 6);
-  }, [trips]);
 
   const todosSoon = useMemo(() => {
     const fromTrips = (trips || []).flatMap((trip) =>
@@ -230,15 +386,57 @@ export default function HomePage() {
     return all.slice(0, 10);
   }, [trips, globalTodos]);
 
+  const eventsSoon = useMemo(() => {
+    const sorted = [...(events || [])].sort((a, b) =>
+      String(a.startDate || "").localeCompare(String(b.startDate || ""))
+    );
+    return sorted.slice(0, 6);
+  }, [events]);
+
+  const tripsSoon = useMemo(() => {
+    const sorted = [...(trips || [])].sort((a, b) =>
+      String(a.startDate || "").localeCompare(String(b.startDate || ""))
+    );
+    return sorted.slice(0, 6);
+  }, [trips]);
+
   const wishlistSoon = useMemo(() => {
+    // newest first
     const sorted = [...(wishlist || [])].sort((a, b) =>
-      String(a.createdAt || "").localeCompare(String(b.createdAt || ""))
+      String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
     );
     return sorted.slice(0, 10);
   }, [wishlist]);
 
-  /* ---------------- ACTIONS ---------------- */
+  // progress feel (today only)
+  const todaysTodos = useMemo(() => {
+    const forToday = (globalTodos || []).filter((t) => t.dueDate === todayStr);
+    const tripForToday = (trips || []).flatMap((trip) =>
+      (trip.todos || []).filter((todo: any) => todo.dueDate === todayStr)
+    );
+    return [...forToday, ...tripForToday];
+  }, [globalTodos, trips, todayStr]);
 
+  const todayAllDone = useMemo(() => {
+    if (todaysTodos.length === 0) return false;
+    return todaysTodos.every((t: any) => !!t.done);
+  }, [todaysTodos]);
+
+  // rare confetti: once per session when all today's todos done
+  useEffect(() => {
+    if (!todayAllDone) return;
+    const key = `asuka_confetti_done_${todayStr}`;
+    const already = typeof window !== "undefined" ? sessionStorage.getItem(key) : "1";
+    if (already) return;
+
+    sessionStorage.setItem(key, "1");
+    setShowConfetti(true);
+
+    if (confettiTimer.current) window.clearTimeout(confettiTimer.current);
+    confettiTimer.current = window.setTimeout(() => setShowConfetti(false), 1200);
+  }, [todayAllDone, todayStr]);
+
+  /* ---------------- ACTIONS ---------------- */
   function resetModalInputs() {
     setName("");
 
@@ -273,8 +471,7 @@ export default function HomePage() {
   }
 
   async function createEvent() {
-    if (!name || !eventStartDate || !eventEndDate || !startTime || !endTime)
-      return;
+    if (!name || !eventStartDate || !eventEndDate || !startTime || !endTime) return;
 
     await addDoc(collection(db, "events"), {
       name,
@@ -325,7 +522,20 @@ export default function HomePage() {
   }
 
   async function toggleWishlistItem(item: WishlistItem) {
-    await updateDoc(doc(db, "wishlist", item.id), { done: !item.done });
+    const nextDone = !item.done;
+    await updateDoc(doc(db, "wishlist", item.id), { done: nextDone });
+
+    // rare confetti on “completed a wish” once per session
+    if (nextDone) {
+      const key = `asuka_confetti_wish_${item.id}`;
+      const already = typeof window !== "undefined" ? sessionStorage.getItem(key) : "1";
+      if (!already) {
+        sessionStorage.setItem(key, "1");
+        setShowConfetti(true);
+        if (confettiTimer.current) window.clearTimeout(confettiTimer.current);
+        confettiTimer.current = window.setTimeout(() => setShowConfetti(false), 1100);
+      }
+    }
   }
 
   async function deleteWishlistItem(item: WishlistItem) {
@@ -336,16 +546,15 @@ export default function HomePage() {
   if (!user) {
     return (
       <main className="min-h-screen bg-cute text-cute-ink relative overflow-hidden flex items-center justify-center px-5">
+        <ConfettiBurst show={showConfetti} />
+
         <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-white/40 blur-2xl" />
         <div className="pointer-events-none absolute top-24 -right-24 w-80 h-80 rounded-full bg-white/35 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-24 left-1/3 w-96 h-96 rounded-full bg-white/30 blur-3xl" />
 
         <div className="max-w-md w-full">
           <div className="card-cute text-left">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-3xl bg-white/75 shadow-cute flex items-center justify-center">
-                <Sparkles />
-              </div>
+            <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-cute-muted">Welcome back</p>
                 <h1 className="text-4xl font-extrabold tracking-tight">
@@ -355,7 +564,25 @@ export default function HomePage() {
                   Events • Trips • TODOs • Wishlist
                 </p>
               </div>
+
+              <button
+                className="mini-nav"
+                onClick={() => setTheme((t) => (t === "day" ? "night" : "day"))}
+                aria-label="Toggle theme"
+                title="Toggle theme"
+              >
+                {theme === "day" ? <Moon size={18} /> : <Sun size={18} />}
+              </button>
             </div>
+
+            {/* Cute buddy */}
+            <div className="mt-4 flex items-center justify-center">
+              <SunshineBuddy size={150} label="Asuka sunshine buddy" />
+            </div>
+
+            <p className="text-sm text-cute-muted mt-2 text-center">
+              “Tomorrow’s sunshine” vibes 🌤️
+            </p>
 
             <button
               className="mt-5 w-full px-8 py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute hover:opacity-95 active:scale-[0.99] transition"
@@ -367,34 +594,58 @@ export default function HomePage() {
               Let’s go!
             </button>
 
-            <p className="text-xs text-cute-muted mt-3">Demo login (local only).</p>
+            <p className="text-xs text-cute-muted mt-3">
+              Demo login (local only).
+            </p>
           </div>
         </div>
       </main>
     );
   }
 
+  const headerMood = dailyMood(todayStr);
+  const season = seasonEmoji(today.getMonth());
+
   /* ---------------- MAIN UI ---------------- */
   return (
     <div className="min-h-screen bg-cute text-cute-ink pb-28">
+      <ConfettiBurst show={showConfetti} />
+
       {/* HEADER */}
       <header className="px-5 pt-6 pb-4">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs text-cute-muted">Your little planner</p>
+          <div className="min-w-0">
+            <p className="text-xs text-cute-muted">Your little planner {season}</p>
             <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
               Planner <PartyPopper className="opacity-80" size={22} />
             </h1>
+
+            <p className="text-sm text-cute-muted mt-1">
+              {todayAllDone
+                ? "Nothing urgent — enjoy! 💤"
+                : headerMood}
+            </p>
           </div>
 
-          <div className="pill">
-            <span className="text-xs text-cute-muted">Today</span>
-            <span className="text-sm font-semibold">{todayStr}</span>
+          <div className="flex items-center gap-2">
+            <div className="pill">
+              <span className="text-xs text-cute-muted">Today</span>
+              <span className="text-sm font-semibold">{todayStr}</span>
+            </div>
+
+            <button
+              className="mini-nav"
+              onClick={() => setTheme((t) => (t === "day" ? "night" : "day"))}
+              aria-label="Toggle theme"
+              title="Toggle theme"
+            >
+              {theme === "day" ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
           </div>
         </div>
       </header>
 
-      {/* 2) CALENDAR FIRST */}
+      {/* CALENDAR FIRST */}
       <section className="px-5">
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           {/* Calendar */}
@@ -406,26 +657,15 @@ export default function HomePage() {
               </span>
 
               <div className="flex items-center gap-2">
-                <button
-                  onClick={goPrevMonth}
-                  className="mini-nav"
-                  aria-label="Previous month"
-                >
+                <button onClick={goPrevMonth} className="mini-nav" aria-label="Previous month">
                   <ChevronLeft size={18} />
                 </button>
 
                 <h2 className="text-sm font-semibold">
-                  {currentMonth.toLocaleString("default", {
-                    month: "long",
-                    year: "numeric",
-                  })}
+                  {currentMonth.toLocaleString("default", { month: "long", year: "numeric" })}
                 </h2>
 
-                <button
-                  onClick={goNextMonth}
-                  className="mini-nav"
-                  aria-label="Next month"
-                >
+                <button onClick={goNextMonth} className="mini-nav" aria-label="Next month">
                   <ChevronRight size={18} />
                 </button>
               </div>
@@ -434,10 +674,7 @@ export default function HomePage() {
             {/* Days Header */}
             <div className="grid grid-cols-7 gap-2 mb-2">
               {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                <div
-                  key={`${d}-${i}`}
-                  className="text-center text-xs text-cute-muted"
-                >
+                <div key={`${d}-${i}`} className="text-center text-xs text-cute-muted">
                   {d}
                 </div>
               ))}
@@ -453,25 +690,19 @@ export default function HomePage() {
                 const isPast = dateStr < todayStr;
 
                 const hasEvent = events.some((e) => e.startDate === dateStr);
-                const hasTrip = trips.some((t) =>
-                  isDateInRange(dateStr, t.startDate, t.endDate)
-                );
+                const hasTrip = trips.some((t) => isDateInRange(dateStr, t.startDate, t.endDate));
 
                 const tripTodosOnDay = trips.flatMap((t) =>
                   (t.todos || []).filter((todo: any) => todo.dueDate === dateStr)
                 );
-                const globalTodosOnDay = globalTodos.filter(
-                  (t) => t.dueDate === dateStr
-                );
+                const globalTodosOnDay = globalTodos.filter((t) => t.dueDate === dateStr);
 
                 const todosOnDay = [...globalTodosOnDay, ...tripTodosOnDay];
                 const hasDeadline = todosOnDay.length > 0;
 
                 const hasPendingTodo = todosOnDay.some((todo: any) => !todo.done);
-                const hasCompletedTodo =
-                  todosOnDay.length > 0 && !hasPendingTodo;
+                const hasCompletedTodo = todosOnDay.length > 0 && !hasPendingTodo;
 
-                // 1) Past dates should be gray
                 const baseClass = isSelected
                   ? "bg-cute-accent text-white"
                   : isPast
@@ -492,24 +723,17 @@ export default function HomePage() {
                       "relative h-11 rounded-2xl text-sm font-semibold transition active:scale-[0.98]",
                       "shadow-[0_10px_30px_rgba(0,0,0,0.08)]",
                       baseClass,
-                        isSelected ? "" : isPast ? "text-gray-400" : "text-cute-ink",
-                        isPast && !isSelected ? "opacity-80" : "",
-
+                      isSelected ? "" : isPast ? "text-gray-400" : "text-cute-ink",
+                      isPast && !isSelected ? "opacity-70" : "",
                     ].join(" ")}
                   >
                     {day}
 
                     {/* Dot Indicators */}
                     <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
-                      {hasEvent && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                      )}
-                      {hasTrip && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                      )}
-                      {hasDeadline && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                      )}
+                      {hasEvent && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                      {hasTrip && <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />}
+                      {hasDeadline && <span className="w-1.5 h-1.5 rounded-full bg-red-500" />}
                     </div>
                   </button>
                 );
@@ -549,28 +773,24 @@ export default function HomePage() {
             <div className="mt-3">
               <p className="text-xs text-cute-muted mb-2">EVENTS & TRIPS</p>
 
-              {events
-                .filter((e) => e.startDate === selectedDate)
-                .map((event) => (
-                  <div
-                    key={event.id}
-                    onClick={() => router.push(`/event/${event.id}`)}
-                    className="detail-pill detail-blue"
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <p className="font-semibold">{event.name}</p>
-                    <p className="text-xs opacity-80">
-                      {event.startTime} → {event.endTime}
-                      {event.location ? ` • ${event.location}` : ""}
-                    </p>
-                  </div>
-                ))}
+              {events.filter((e) => e.startDate === selectedDate).map((event) => (
+                <div
+                  key={event.id}
+                  onClick={() => router.push(`/event/${event.id}`)}
+                  className="detail-pill detail-blue"
+                  role="button"
+                  tabIndex={0}
+                >
+                  <p className="font-semibold">{event.name}</p>
+                  <p className="text-xs opacity-80">
+                    {event.startTime} → {event.endTime}
+                    {event.location ? ` • ${event.location}` : ""}
+                  </p>
+                </div>
+              ))}
 
               {trips
-                .filter((t) =>
-                  isDateInRange(selectedDate, t.startDate, t.endDate)
-                )
+                .filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate))
                 .map((trip) => (
                   <div
                     key={trip.id}
@@ -587,10 +807,13 @@ export default function HomePage() {
                 ))}
 
               {events.filter((e) => e.startDate === selectedDate).length === 0 &&
-                trips.filter((t) =>
-                  isDateInRange(selectedDate, t.startDate, t.endDate)
-                ).length === 0 && (
-                  <p className="text-sm text-cute-muted">No events or trips</p>
+                trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate)).length === 0 && (
+                  <div className="mt-3 text-center">
+                    <div className="flex justify-center">
+                      <SunshineBuddy size={90} label="Empty state buddy" />
+                    </div>
+                    <p className="text-sm text-cute-muted mt-2">Nothing planned here yet ✨</p>
+                  </div>
                 )}
             </div>
 
@@ -608,25 +831,17 @@ export default function HomePage() {
                       if (isGlobal) toggleGlobalTodo(todo);
                       else router.push(`/trip/${todo.tripId}`);
                     }}
-                    className={`detail-pill ${
-                      todo.done ? "detail-green" : "detail-red"
-                    }`}
+                    className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
                     role="button"
                     tabIndex={0}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p
-                          className={`font-semibold ${
-                            todo.done ? "line-through opacity-80" : ""
-                          }`}
-                        >
+                        <p className={`font-semibold ${todo.done ? "line-through opacity-80" : ""}`}>
                           {todo.text}
                         </p>
                         <p className="text-xs opacity-80">
-                          {isGlobal
-                            ? `Global • Due: ${todo.dueDate}`
-                            : `${todo.tripName} • PIC: ${todo.pic}`}
+                          {isGlobal ? `Global • Due: ${todo.dueDate}` : `${todo.tripName} • PIC: ${todo.pic}`}
                         </p>
                       </div>
 
@@ -649,14 +864,16 @@ export default function HomePage() {
               })}
 
               {todosForDateCombined.length === 0 && (
-                <p className="text-sm text-cute-muted">No deadlines</p>
+                <div className="mt-3 text-center">
+                  <p className="text-sm text-cute-muted">No deadlines — breathe 🌿</p>
+                </div>
               )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3) LIST SECTIONS */}
+      {/* LIST SECTIONS */}
       <section className="px-5 mt-5">
         <div className="grid gap-4 lg:grid-cols-2">
           {/* EVENTS */}
@@ -667,9 +884,7 @@ export default function HomePage() {
                   <Sparkles size={14} />
                   Events
                 </span>
-                <span className="text-xs text-cute-muted">
-                  {events.length} total
-                </span>
+                <span className="text-xs text-cute-muted">{events.length} total</span>
               </div>
             </div>
 
@@ -688,8 +903,7 @@ export default function HomePage() {
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-cute-muted">
                       <span className="inline-flex items-center gap-1">
                         <Clock size={13} />
-                        {event.startDate} {event.startTime} → {event.endDate}{" "}
-                        {event.endTime}
+                        {event.startDate} {event.startTime} → {event.endDate} {event.endTime}
                       </span>
 
                       {event.location ? (
@@ -716,7 +930,9 @@ export default function HomePage() {
               ))}
 
               {eventsSoon.length === 0 && (
-                <p className="text-sm text-cute-muted">No events yet</p>
+                <div className="mt-3 text-center">
+                  <p className="text-sm text-cute-muted">No events yet — add a little joy ✨</p>
+                </div>
               )}
             </div>
           </div>
@@ -729,9 +945,7 @@ export default function HomePage() {
                   <Plane size={14} />
                   Trips
                 </span>
-                <span className="text-xs text-cute-muted">
-                  {trips.length} total
-                </span>
+                <span className="text-xs text-cute-muted">{trips.length} total</span>
               </div>
             </div>
 
@@ -766,7 +980,9 @@ export default function HomePage() {
               ))}
 
               {tripsSoon.length === 0 && (
-                <p className="text-sm text-cute-muted">No trips yet</p>
+                <div className="mt-3 text-center">
+                  <p className="text-sm text-cute-muted">No trips yet — someday? 🧳</p>
+                </div>
               )}
             </div>
           </div>
@@ -779,16 +995,13 @@ export default function HomePage() {
                   <CheckSquare size={14} />
                   TODOs
                 </span>
-                <span className="text-xs text-cute-muted">
-                  global + trip deadlines
-                </span>
+                <span className="text-xs text-cute-muted">global + trip deadlines</span>
               </div>
             </div>
 
             <div className="space-y-2">
               {todosSoon.map((todo: any, i: number) => {
                 const isGlobal = todo.source === "global";
-
                 return (
                   <div
                     key={`${todo.source}-${todo.id || todo.tripId}-${todo.text}-${todo.dueDate}-${i}`}
@@ -801,14 +1014,9 @@ export default function HomePage() {
                     tabIndex={0}
                   >
                     <div className="min-w-0">
-                      <p
-                        className={`font-semibold truncate ${
-                          todo.done ? "line-through text-cute-muted" : ""
-                        }`}
-                      >
+                      <p className={`font-semibold truncate ${todo.done ? "line-through text-cute-muted" : ""}`}>
                         {todo.text}
                       </p>
-
                       <p className="text-xs text-cute-muted mt-1">
                         {isGlobal
                           ? `Global • Due: ${todo.dueDate}`
@@ -834,7 +1042,12 @@ export default function HomePage() {
               })}
 
               {todosSoon.length === 0 && (
-                <p className="text-sm text-cute-muted">No TODO deadlines</p>
+                <div className="mt-3 text-center">
+                  <div className="flex justify-center">
+                    <SunshineBuddy size={88} label="No todos buddy" />
+                  </div>
+                  <p className="text-sm text-cute-muted mt-2">No deadlines — cozy day ☕</p>
+                </div>
               )}
             </div>
           </div>
@@ -843,16 +1056,11 @@ export default function HomePage() {
           <div className="card-cute">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span
-                  className="badge"
-                  style={{ color: "#db2777" /* pink */ }}
-                >
+                <span className="badge" style={{ color: "#db2777" }}>
                   <Heart size={14} />
                   Wishlist
                 </span>
-                <span className="text-xs text-cute-muted">
-                  {wishlist.length} items
-                </span>
+                <span className="text-xs text-cute-muted">{wishlist.length} items</span>
               </div>
             </div>
 
@@ -866,16 +1074,10 @@ export default function HomePage() {
                   tabIndex={0}
                 >
                   <div className="min-w-0">
-                    <p
-                      className={`font-semibold truncate ${
-                        w.done ? "line-through text-cute-muted" : ""
-                      }`}
-                    >
+                    <p className={`font-semibold truncate ${w.done ? "line-through text-cute-muted" : ""}`}>
                       {w.text}
                     </p>
-                    <p className="text-xs text-cute-muted mt-1">
-                      Someday ✨ (tap to mark done)
-                    </p>
+                    <p className="text-xs text-cute-muted mt-1">Someday ✨ (tap to mark done)</p>
                   </div>
 
                   <button
@@ -893,9 +1095,9 @@ export default function HomePage() {
               ))}
 
               {wishlistSoon.length === 0 && (
-                <p className="text-sm text-cute-muted">
-                  Nothing yet — add a “someday” idea!
-                </p>
+                <div className="mt-3 text-center">
+                  <p className="text-sm text-cute-muted">Nothing here yet — add a little dream 💭</p>
+                </div>
               )}
             </div>
           </div>
@@ -926,7 +1128,7 @@ export default function HomePage() {
           className="px-4 py-2 rounded-2xl bg-white/70 shadow-cute hover:opacity-95 active:scale-[0.99] transition inline-flex items-center gap-2"
         >
           <LogOut size={18} />
-          <span className="font-semibold text-sm">Logout</span>
+          <span className="font-semibold text-sm">See you later</span>
         </button>
       </nav>
 
@@ -943,118 +1145,102 @@ export default function HomePage() {
             className="bg-white w-full rounded-t-[28px] p-6 animate-slideUp shadow-[0_-20px_60px_rgba(0,0,0,0.25)]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Picker */}
-{createMode === "pick" && (
-  <>
-    <div className="flex items-center justify-between mb-3">
-      <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-        Add something ✨
-      </p>
-      <button
-        className="mini-nav"
-        onClick={() => {
-          setShowModal(false);
-          resetModalInputs();
-        }}
-      >
-        ✕
-      </button>
-    </div>
+            {/* Picker (2x2, cute icons) */}
+            {createMode === "pick" && (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-lg font-extrabold tracking-tight text-cute-ink">
+                    Add something ✨
+                  </p>
+                  <button
+                    className="mini-nav"
+                    onClick={() => {
+                      setShowModal(false);
+                      resetModalInputs();
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
 
-    {/* 2x2 grid */}
-    <div className="grid grid-cols-2 gap-3">
-      {/* Event */}
-      <button
-        className="pick-btn pick-event"
-        onClick={() => setCreateMode("event")}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
-            <Sparkles />
-          </div>
-          <div className="text-left">
-            <p className="font-extrabold leading-tight">Event</p>
-            <p className="text-xs opacity-80">meetups, plans</p>
-          </div>
-        </div>
-      </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button className="pick-btn pick-event" onClick={() => setCreateMode("event")}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+                        <Sparkles />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-extrabold leading-tight">Event</p>
+                        <p className="text-xs opacity-80">meetups</p>
+                      </div>
+                    </div>
+                  </button>
 
-      {/* Trip */}
-      <button
-        className="pick-btn pick-trip"
-        onClick={() => setCreateMode("trip")}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
-            <Plane />
-          </div>
-          <div className="text-left">
-            <p className="font-extrabold leading-tight">Trip</p>
-            <p className="text-xs opacity-80">travel plan</p>
-          </div>
-        </div>
-      </button>
+                  <button className="pick-btn pick-trip" onClick={() => setCreateMode("trip")}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+                        <Plane />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-extrabold leading-tight">Trip</p>
+                        <p className="text-xs opacity-80">travel</p>
+                      </div>
+                    </div>
+                  </button>
 
-      {/* TODO */}
-      <button
-        className="pick-btn"
-        onClick={() => setCreateMode("todo")}
-        style={{
-          boxShadow:
-            "inset 4px 0 0 rgba(239, 68, 68, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
-            <CheckSquare />
-          </div>
-          <div className="text-left">
-            <p className="font-extrabold leading-tight">TODO</p>
-            <p className="text-xs opacity-80">has deadline</p>
-          </div>
-        </div>
-      </button>
+                  <button
+                    className="pick-btn"
+                    onClick={() => setCreateMode("todo")}
+                    style={{
+                      boxShadow:
+                        "inset 4px 0 0 rgba(239, 68, 68, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+                        <CheckSquare />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-extrabold leading-tight">TODO</p>
+                        <p className="text-xs opacity-80">deadline</p>
+                      </div>
+                    </div>
+                  </button>
 
-      {/* Wishlist */}
-      <button
-        className="pick-btn"
-        onClick={() => setCreateMode("wishlist")}
-        style={{
-          boxShadow:
-            "inset 4px 0 0 rgba(219, 39, 119, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
-            <Heart />
-          </div>
-          <div className="text-left">
-            <p className="font-extrabold leading-tight">Wishlist</p>
-            <p className="text-xs opacity-80">someday ✨</p>
-          </div>
-        </div>
-      </button>
-    </div>
+                  <button
+                    className="pick-btn"
+                    onClick={() => setCreateMode("wishlist")}
+                    style={{
+                      boxShadow:
+                        "inset 4px 0 0 rgba(219, 39, 119, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+                        <Heart />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-extrabold leading-tight">Wishlist</p>
+                        <p className="text-xs opacity-80">someday</p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
 
-    {/* tiny hint */}
-    <p className="text-xs text-cute-muted mt-3">
-      Tip: TODO = deadline. Wishlist = no deadline.
-    </p>
-  </>
-)}
-
+                <p className="text-xs text-cute-muted mt-3">
+                  Tip: TODO = deadline. Wishlist = no deadline.
+                </p>
+              </>
+            )}
 
             {/* Event form */}
             {createMode === "event" && (
               <>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-                    Create Event
+                    Plan an Event ✨
                   </p>
-                  <button
-                    className="mini-nav"
-                    onClick={() => setCreateMode("pick")}
-                  >
+                  <button className="mini-nav" onClick={() => setCreateMode("pick")}>
                     ←
                   </button>
                 </div>
@@ -1122,13 +1308,7 @@ export default function HomePage() {
                   <button
                     onClick={createEvent}
                     className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-                    disabled={
-                      !name ||
-                      !eventStartDate ||
-                      !eventEndDate ||
-                      !startTime ||
-                      !endTime
-                    }
+                    disabled={!name || !eventStartDate || !eventEndDate || !startTime || !endTime}
                   >
                     Create Event
                   </button>
@@ -1141,12 +1321,9 @@ export default function HomePage() {
               <>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-                    Create Trip
+                    Plan a Trip ✨
                   </p>
-                  <button
-                    className="mini-nav"
-                    onClick={() => setCreateMode("pick")}
-                  >
+                  <button className="mini-nav" onClick={() => setCreateMode("pick")}>
                     ←
                   </button>
                 </div>
@@ -1196,12 +1373,9 @@ export default function HomePage() {
               <>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-                    Create TODO
+                    Add a Task ✨
                   </p>
-                  <button
-                    className="mini-nav"
-                    onClick={() => setCreateMode("pick")}
-                  >
+                  <button className="mini-nav" onClick={() => setCreateMode("pick")}>
                     ←
                   </button>
                 </div>
@@ -1240,12 +1414,9 @@ export default function HomePage() {
               <>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-                    Add Wishlist Item
+                    Add a Someday Idea 💭
                   </p>
-                  <button
-                    className="mini-nav"
-                    onClick={() => setCreateMode("pick")}
-                  >
+                  <button className="mini-nav" onClick={() => setCreateMode("pick")}>
                     ←
                   </button>
                 </div>
