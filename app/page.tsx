@@ -62,10 +62,8 @@ type WishlistItem = {
   createdAt?: string;
 };
 
-/* ---------------- SMALL DELIGHT COMPONENTS ---------------- */
-
+/* ---------------- DELIGHT HELPERS ---------------- */
 function seasonEmoji(monthIndex0: number) {
-  // 0=Jan ... 11=Dec
   if (monthIndex0 === 2 || monthIndex0 === 3 || monthIndex0 === 4) return "🌸";
   if (monthIndex0 === 5 || monthIndex0 === 6 || monthIndex0 === 7) return "☀️";
   if (monthIndex0 === 8 || monthIndex0 === 9 || monthIndex0 === 10) return "🍁";
@@ -83,9 +81,10 @@ function dailyMood(todayStr: string) {
     "You’re doing great — quietly 🌙",
     "Today feels like a good day to plan 🌤️",
   ];
-  // deterministic index from date string
   let hash = 0;
-  for (let i = 0; i < todayStr.length; i++) hash = (hash * 31 + todayStr.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < todayStr.length; i++) {
+    hash = (hash * 31 + todayStr.charCodeAt(i)) >>> 0;
+  }
   return moods[hash % moods.length];
 }
 
@@ -96,7 +95,6 @@ function SunshineBuddy({
   size?: number;
   label?: string;
 }) {
-  // Simple “sun + sleepy cat” SVG with gentle float + blink (CSS classes from globals.css)
   return (
     <div className="cute-float" aria-label={label} title={label}>
       <svg
@@ -107,16 +105,18 @@ function SunshineBuddy({
         xmlns="http://www.w3.org/2000/svg"
         style={{ display: "block" }}
       >
-        {/* soft blob */}
         <path
           d="M26 66c0-28 18-46 44-46s44 18 44 46-18 54-44 54-44-26-44-54Z"
           fill="rgba(255,255,255,0.55)"
         />
-        {/* sun */}
         <circle cx="92" cy="44" r="18" fill="rgba(250,204,21,0.95)" />
         <circle cx="92" cy="44" r="18" fill="url(#g1)" opacity="0.35" />
-        {/* rays */}
-        <g opacity="0.75" stroke="rgba(250,204,21,0.9)" strokeWidth="4" strokeLinecap="round">
+        <g
+          opacity="0.75"
+          stroke="rgba(250,204,21,0.9)"
+          strokeWidth="4"
+          strokeLinecap="round"
+        >
           <path d="M92 16v6" />
           <path d="M92 66v6" />
           <path d="M64 44h6" />
@@ -127,13 +127,11 @@ function SunshineBuddy({
           <path d="M107 29l4-4" />
         </g>
 
-        {/* cat head */}
         <path
           d="M44 78c0-18 12-30 26-30s26 12 26 30-12 34-26 34-26-16-26-34Z"
           fill="rgba(255,255,255,0.92)"
           stroke="rgba(17,24,39,0.10)"
         />
-        {/* ears */}
         <path
           d="M52 54l-8 10c-2 2-1 6 2 6h10"
           fill="rgba(255,255,255,0.92)"
@@ -145,14 +143,21 @@ function SunshineBuddy({
           stroke="rgba(17,24,39,0.10)"
         />
 
-        {/* eyes (blink group) */}
-        <g className="buddy-blink" opacity="0.9" stroke="rgba(31,41,55,0.75)" strokeWidth="4" strokeLinecap="round">
+        <g
+          className="buddy-blink"
+          opacity="0.9"
+          stroke="rgba(31,41,55,0.75)"
+          strokeWidth="4"
+          strokeLinecap="round"
+        >
           <path d="M58 78c4 3 8 3 12 0" />
           <path d="M70 78c4 3 8 3 12 0" />
         </g>
 
-        {/* nose + mouth */}
-        <path d="M70 86l-2 2 2 2 2-2-2-2Z" fill="rgba(244,114,182,0.9)" />
+        <path
+          d="M70 86l-2 2 2 2 2-2-2-2Z"
+          fill="rgba(244,114,182,0.9)"
+        />
         <path
           d="M70 90c-6 6-12 6-18 0"
           stroke="rgba(31,41,55,0.55)"
@@ -160,7 +165,6 @@ function SunshineBuddy({
           strokeLinecap="round"
         />
 
-        {/* sparkle */}
         <path
           d="M44 40l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z"
           fill="rgba(244,114,182,0.85)"
@@ -168,7 +172,14 @@ function SunshineBuddy({
         />
 
         <defs>
-          <radialGradient id="g1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(90 38) rotate(90) scale(26)">
+          <radialGradient
+            id="g1"
+            cx="0"
+            cy="0"
+            r="1"
+            gradientUnits="userSpaceOnUse"
+            gradientTransform="translate(90 38) rotate(90) scale(26)"
+          >
             <stop stopColor="white" />
             <stop offset="1" stopColor="white" stopOpacity="0" />
           </radialGradient>
@@ -180,12 +191,10 @@ function SunshineBuddy({
 
 function ConfettiBurst({ show }: { show: boolean }) {
   const pieces = useMemo(() => {
-    // random-ish positions; client-only anyway
     return Array.from({ length: 22 }, (_, i) => ({
       id: i,
-      left: Math.round(Math.random() * 92) + 4, // 4%..96%
+      left: Math.round(Math.random() * 92) + 4,
       delay: Math.random() * 180,
-      // avoid hardcoded colors: use CSS background via currentColor + opacity with varied hues? (we'll just use pastel via HSL here)
       bg: `hsl(${Math.floor(Math.random() * 360)} 85% 70%)`,
     }));
   }, []);
@@ -193,10 +202,7 @@ function ConfettiBurst({ show }: { show: boolean }) {
   if (!show) return null;
 
   return (
-    <div
-      className="pointer-events-none fixed inset-0 z-[60] overflow-hidden"
-      aria-hidden="true"
-    >
+    <div className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">
       {pieces.map((p) => (
         <span
           key={p.id}
@@ -213,7 +219,6 @@ function ConfettiBurst({ show }: { show: boolean }) {
 }
 
 /* ---------------- PAGE ---------------- */
-
 export default function HomePage() {
   const [user, setUser] = useState<any>(null);
 
@@ -232,35 +237,39 @@ export default function HomePage() {
   );
   const [selectedDate, setSelectedDate] = useState(todayStr);
 
-  // Create modal
   const [showModal, setShowModal] = useState(false);
   const [createMode, setCreateMode] = useState<CreateMode>("pick");
 
-  // Shared inputs
   const [name, setName] = useState("");
 
-  // Trip inputs
   const [tripStartDate, setTripStartDate] = useState("");
   const [tripEndDate, setTripEndDate] = useState("");
 
-  // Event inputs
   const [eventStartDate, setEventStartDate] = useState("");
   const [eventEndDate, setEventEndDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState("");
 
-  // Global TODO inputs
   const [todoText, setTodoText] = useState("");
   const [todoDue, setTodoDue] = useState("");
 
-  // Wishlist inputs
   const [wishText, setWishText] = useState("");
 
   const router = useRouter();
 
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimer = useRef<number | null>(null);
+
+  /* Theme: read & store in localStorage; CSS driven by data-theme on wrapper */
+  useEffect(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("asukaTheme") : null;
+    setTheme(saved === "night" ? "night" : "day");
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("asukaTheme", theme);
+  }, [theme]);
 
   function goPrevMonth() {
     setCurrentMonth(
@@ -272,19 +281,6 @@ export default function HomePage() {
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
     );
   }
-
-  // Theme init + apply
-  useEffect(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("asukaTheme") : null;
-    const initial: ThemeMode = saved === "night" ? "night" : "day";
-    setTheme(initial);
-    document.documentElement.dataset.theme = initial;
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    if (typeof window !== "undefined") localStorage.setItem("asukaTheme", theme);
-  }, [theme]);
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
@@ -362,6 +358,20 @@ export default function HomePage() {
     return [...globalTodosForDate, ...tripTodosForDate];
   }, [globalTodosForDate, tripTodosForDate]);
 
+  const eventsSoon = useMemo(() => {
+    const sorted = [...(events || [])].sort((a, b) =>
+      String(a.startDate || "").localeCompare(String(b.startDate || ""))
+    );
+    return sorted.slice(0, 6);
+  }, [events]);
+
+  const tripsSoon = useMemo(() => {
+    const sorted = [...(trips || [])].sort((a, b) =>
+      String(a.startDate || "").localeCompare(String(b.startDate || ""))
+    );
+    return sorted.slice(0, 6);
+  }, [trips]);
+
   const todosSoon = useMemo(() => {
     const fromTrips = (trips || []).flatMap((trip) =>
       (trip.todos || []).map((todo: any) => ({
@@ -378,37 +388,20 @@ export default function HomePage() {
     }));
 
     const all = [...fromGlobal, ...fromTrips];
-
     all.sort((a: any, b: any) =>
       String(a.dueDate || "").localeCompare(String(b.dueDate || ""))
     );
-
     return all.slice(0, 10);
   }, [trips, globalTodos]);
 
-  const eventsSoon = useMemo(() => {
-    const sorted = [...(events || [])].sort((a, b) =>
-      String(a.startDate || "").localeCompare(String(b.startDate || ""))
-    );
-    return sorted.slice(0, 6);
-  }, [events]);
-
-  const tripsSoon = useMemo(() => {
-    const sorted = [...(trips || [])].sort((a, b) =>
-      String(a.startDate || "").localeCompare(String(b.startDate || ""))
-    );
-    return sorted.slice(0, 6);
-  }, [trips]);
-
   const wishlistSoon = useMemo(() => {
-    // newest first
     const sorted = [...(wishlist || [])].sort((a, b) =>
       String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
     );
     return sorted.slice(0, 10);
   }, [wishlist]);
 
-  // progress feel (today only)
+  /* Progress feel (today only) */
   const todaysTodos = useMemo(() => {
     const forToday = (globalTodos || []).filter((t) => t.dueDate === todayStr);
     const tripForToday = (trips || []).flatMap((trip) =>
@@ -422,11 +415,11 @@ export default function HomePage() {
     return todaysTodos.every((t: any) => !!t.done);
   }, [todaysTodos]);
 
-  // rare confetti: once per session when all today's todos done
   useEffect(() => {
     if (!todayAllDone) return;
     const key = `asuka_confetti_done_${todayStr}`;
-    const already = typeof window !== "undefined" ? sessionStorage.getItem(key) : "1";
+    const already =
+      typeof window !== "undefined" ? sessionStorage.getItem(key) : "1";
     if (already) return;
 
     sessionStorage.setItem(key, "1");
@@ -439,39 +432,33 @@ export default function HomePage() {
   /* ---------------- ACTIONS ---------------- */
   function resetModalInputs() {
     setName("");
-
     setTripStartDate("");
     setTripEndDate("");
-
     setEventStartDate("");
     setEventEndDate("");
     setStartTime("");
     setEndTime("");
     setLocation("");
-
     setTodoText("");
     setTodoDue("");
-
     setWishText("");
-
     setCreateMode("pick");
   }
 
   async function createTrip() {
     if (!name || !tripStartDate || !tripEndDate) return;
-
     await addDoc(collection(db, "trips"), {
       name,
       startDate: tripStartDate,
       endDate: tripEndDate,
     });
-
     setShowModal(false);
     resetModalInputs();
   }
 
   async function createEvent() {
-    if (!name || !eventStartDate || !eventEndDate || !startTime || !endTime) return;
+    if (!name || !eventStartDate || !eventEndDate || !startTime || !endTime)
+      return;
 
     await addDoc(collection(db, "events"), {
       name,
@@ -525,15 +512,18 @@ export default function HomePage() {
     const nextDone = !item.done;
     await updateDoc(doc(db, "wishlist", item.id), { done: nextDone });
 
-    // rare confetti on “completed a wish” once per session
     if (nextDone) {
       const key = `asuka_confetti_wish_${item.id}`;
-      const already = typeof window !== "undefined" ? sessionStorage.getItem(key) : "1";
+      const already =
+        typeof window !== "undefined" ? sessionStorage.getItem(key) : "1";
       if (!already) {
         sessionStorage.setItem(key, "1");
         setShowConfetti(true);
         if (confettiTimer.current) window.clearTimeout(confettiTimer.current);
-        confettiTimer.current = window.setTimeout(() => setShowConfetti(false), 1100);
+        confettiTimer.current = window.setTimeout(
+          () => setShowConfetti(false),
+          1100
+        );
       }
     }
   }
@@ -542,10 +532,16 @@ export default function HomePage() {
     await deleteDoc(doc(db, "wishlist", item.id));
   }
 
+  const headerMood = dailyMood(todayStr);
+  const season = seasonEmoji(today.getMonth());
+
   /* ---------------- LOGIN SCREEN ---------------- */
   if (!user) {
     return (
-      <main className="min-h-screen bg-cute text-cute-ink relative overflow-hidden flex items-center justify-center px-5">
+      <main
+        data-theme={theme}
+        className="min-h-screen bg-cute text-cute-ink relative overflow-hidden flex items-center justify-center px-5"
+      >
         <ConfettiBurst show={showConfetti} />
 
         <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-white/40 blur-2xl" />
@@ -575,7 +571,6 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Cute buddy */}
             <div className="mt-4 flex items-center justify-center">
               <SunshineBuddy size={150} label="Asuka sunshine buddy" />
             </div>
@@ -603,12 +598,12 @@ export default function HomePage() {
     );
   }
 
-  const headerMood = dailyMood(todayStr);
-  const season = seasonEmoji(today.getMonth());
-
   /* ---------------- MAIN UI ---------------- */
   return (
-    <div className="min-h-screen bg-cute text-cute-ink pb-28">
+    <div
+      data-theme={theme}
+      className="min-h-screen bg-cute text-cute-ink pb-28"
+    >
       <ConfettiBurst show={showConfetti} />
 
       {/* HEADER */}
@@ -621,9 +616,7 @@ export default function HomePage() {
             </h1>
 
             <p className="text-sm text-cute-muted mt-1">
-              {todayAllDone
-                ? "Nothing urgent — enjoy! 💤"
-                : headerMood}
+              {todayAllDone ? "Nothing urgent — enjoy! 💤" : headerMood}
             </p>
           </div>
 
@@ -657,15 +650,42 @@ export default function HomePage() {
               </span>
 
               <div className="flex items-center gap-2">
-                <button onClick={goPrevMonth} className="mini-nav" aria-label="Previous month">
+                <button
+                  onClick={() =>
+                    setCurrentMonth(
+                      new Date(
+                        currentMonth.getFullYear(),
+                        currentMonth.getMonth() - 1,
+                        1
+                      )
+                    )
+                  }
+                  className="mini-nav"
+                  aria-label="Previous month"
+                >
                   <ChevronLeft size={18} />
                 </button>
 
                 <h2 className="text-sm font-semibold">
-                  {currentMonth.toLocaleString("default", { month: "long", year: "numeric" })}
+                  {currentMonth.toLocaleString("default", {
+                    month: "long",
+                    year: "numeric",
+                  })}
                 </h2>
 
-                <button onClick={goNextMonth} className="mini-nav" aria-label="Next month">
+                <button
+                  onClick={() =>
+                    setCurrentMonth(
+                      new Date(
+                        currentMonth.getFullYear(),
+                        currentMonth.getMonth() + 1,
+                        1
+                      )
+                    )
+                  }
+                  className="mini-nav"
+                  aria-label="Next month"
+                >
                   <ChevronRight size={18} />
                 </button>
               </div>
@@ -674,7 +694,10 @@ export default function HomePage() {
             {/* Days Header */}
             <div className="grid grid-cols-7 gap-2 mb-2">
               {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                <div key={`${d}-${i}`} className="text-center text-xs text-cute-muted">
+                <div
+                  key={`${d}-${i}`}
+                  className="text-center text-xs text-cute-muted"
+                >
                   {d}
                 </div>
               ))}
@@ -690,18 +713,23 @@ export default function HomePage() {
                 const isPast = dateStr < todayStr;
 
                 const hasEvent = events.some((e) => e.startDate === dateStr);
-                const hasTrip = trips.some((t) => isDateInRange(dateStr, t.startDate, t.endDate));
+                const hasTrip = trips.some((t) =>
+                  isDateInRange(dateStr, t.startDate, t.endDate)
+                );
 
                 const tripTodosOnDay = trips.flatMap((t) =>
                   (t.todos || []).filter((todo: any) => todo.dueDate === dateStr)
                 );
-                const globalTodosOnDay = globalTodos.filter((t) => t.dueDate === dateStr);
+                const globalTodosOnDay = globalTodos.filter(
+                  (t) => t.dueDate === dateStr
+                );
 
                 const todosOnDay = [...globalTodosOnDay, ...tripTodosOnDay];
                 const hasDeadline = todosOnDay.length > 0;
 
                 const hasPendingTodo = todosOnDay.some((todo: any) => !todo.done);
-                const hasCompletedTodo = todosOnDay.length > 0 && !hasPendingTodo;
+                const hasCompletedTodo =
+                  todosOnDay.length > 0 && !hasPendingTodo;
 
                 const baseClass = isSelected
                   ? "bg-cute-accent text-white"
@@ -723,17 +751,26 @@ export default function HomePage() {
                       "relative h-11 rounded-2xl text-sm font-semibold transition active:scale-[0.98]",
                       "shadow-[0_10px_30px_rgba(0,0,0,0.08)]",
                       baseClass,
-                      isSelected ? "" : isPast ? "text-gray-400" : "text-cute-ink",
+                      isSelected
+                        ? ""
+                        : isPast
+                        ? "text-gray-400"
+                        : "text-cute-ink",
                       isPast && !isSelected ? "opacity-70" : "",
                     ].join(" ")}
                   >
                     {day}
 
-                    {/* Dot Indicators */}
                     <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
-                      {hasEvent && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                      {hasTrip && <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />}
-                      {hasDeadline && <span className="w-1.5 h-1.5 rounded-full bg-red-500" />}
+                      {hasEvent && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      )}
+                      {hasTrip && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                      )}
+                      {hasDeadline && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                      )}
                     </div>
                   </button>
                 );
@@ -773,21 +810,23 @@ export default function HomePage() {
             <div className="mt-3">
               <p className="text-xs text-cute-muted mb-2">EVENTS & TRIPS</p>
 
-              {events.filter((e) => e.startDate === selectedDate).map((event) => (
-                <div
-                  key={event.id}
-                  onClick={() => router.push(`/event/${event.id}`)}
-                  className="detail-pill detail-blue"
-                  role="button"
-                  tabIndex={0}
-                >
-                  <p className="font-semibold">{event.name}</p>
-                  <p className="text-xs opacity-80">
-                    {event.startTime} → {event.endTime}
-                    {event.location ? ` • ${event.location}` : ""}
-                  </p>
-                </div>
-              ))}
+              {events
+                .filter((e) => e.startDate === selectedDate)
+                .map((event) => (
+                  <div
+                    key={event.id}
+                    onClick={() => router.push(`/event/${event.id}`)}
+                    className="detail-pill detail-blue"
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <p className="font-semibold">{event.name}</p>
+                    <p className="text-xs opacity-80">
+                      {event.startTime} → {event.endTime}
+                      {event.location ? ` • ${event.location}` : ""}
+                    </p>
+                  </div>
+                ))}
 
               {trips
                 .filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate))
@@ -807,17 +846,21 @@ export default function HomePage() {
                 ))}
 
               {events.filter((e) => e.startDate === selectedDate).length === 0 &&
-                trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate)).length === 0 && (
+                trips.filter((t) =>
+                  isDateInRange(selectedDate, t.startDate, t.endDate)
+                ).length === 0 && (
                   <div className="mt-3 text-center">
                     <div className="flex justify-center">
                       <SunshineBuddy size={90} label="Empty state buddy" />
                     </div>
-                    <p className="text-sm text-cute-muted mt-2">Nothing planned here yet ✨</p>
+                    <p className="text-sm text-cute-muted mt-2">
+                      Nothing planned here yet ✨
+                    </p>
                   </div>
                 )}
             </div>
 
-            {/* TODO DEADLINES (combined) */}
+            {/* TODO DEADLINES */}
             <div className="mt-5">
               <p className="text-xs text-cute-muted mb-2">TODO DEADLINES</p>
 
@@ -841,7 +884,9 @@ export default function HomePage() {
                           {todo.text}
                         </p>
                         <p className="text-xs opacity-80">
-                          {isGlobal ? `Global • Due: ${todo.dueDate}` : `${todo.tripName} • PIC: ${todo.pic}`}
+                          {isGlobal
+                            ? `Global • Due: ${todo.dueDate}`
+                            : `${todo.tripName} • PIC: ${todo.pic}`}
                         </p>
                       </div>
 
@@ -864,9 +909,7 @@ export default function HomePage() {
               })}
 
               {todosForDateCombined.length === 0 && (
-                <div className="mt-3 text-center">
-                  <p className="text-sm text-cute-muted">No deadlines — breathe 🌿</p>
-                </div>
+                <p className="text-sm text-cute-muted">No deadlines — breathe 🌿</p>
               )}
             </div>
           </div>
@@ -903,7 +946,8 @@ export default function HomePage() {
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-cute-muted">
                       <span className="inline-flex items-center gap-1">
                         <Clock size={13} />
-                        {event.startDate} {event.startTime} → {event.endDate} {event.endTime}
+                        {event.startDate} {event.startTime} → {event.endDate}{" "}
+                        {event.endTime}
                       </span>
 
                       {event.location ? (
@@ -930,9 +974,9 @@ export default function HomePage() {
               ))}
 
               {eventsSoon.length === 0 && (
-                <div className="mt-3 text-center">
-                  <p className="text-sm text-cute-muted">No events yet — add a little joy ✨</p>
-                </div>
+                <p className="text-sm text-cute-muted">
+                  No events yet — add a little joy ✨
+                </p>
               )}
             </div>
           </div>
@@ -980,9 +1024,9 @@ export default function HomePage() {
               ))}
 
               {tripsSoon.length === 0 && (
-                <div className="mt-3 text-center">
-                  <p className="text-sm text-cute-muted">No trips yet — someday? 🧳</p>
-                </div>
+                <p className="text-sm text-cute-muted">
+                  No trips yet — someday? 🧳
+                </p>
               )}
             </div>
           </div>
@@ -995,7 +1039,9 @@ export default function HomePage() {
                   <CheckSquare size={14} />
                   TODOs
                 </span>
-                <span className="text-xs text-cute-muted">global + trip deadlines</span>
+                <span className="text-xs text-cute-muted">
+                  global + trip deadlines
+                </span>
               </div>
             </div>
 
@@ -1014,9 +1060,14 @@ export default function HomePage() {
                     tabIndex={0}
                   >
                     <div className="min-w-0">
-                      <p className={`font-semibold truncate ${todo.done ? "line-through text-cute-muted" : ""}`}>
+                      <p
+                        className={`font-semibold truncate ${
+                          todo.done ? "line-through text-cute-muted" : ""
+                        }`}
+                      >
                         {todo.text}
                       </p>
+
                       <p className="text-xs text-cute-muted mt-1">
                         {isGlobal
                           ? `Global • Due: ${todo.dueDate}`
@@ -1046,7 +1097,9 @@ export default function HomePage() {
                   <div className="flex justify-center">
                     <SunshineBuddy size={88} label="No todos buddy" />
                   </div>
-                  <p className="text-sm text-cute-muted mt-2">No deadlines — cozy day ☕</p>
+                  <p className="text-sm text-cute-muted mt-2">
+                    No deadlines — cozy day ☕
+                  </p>
                 </div>
               )}
             </div>
@@ -1074,10 +1127,16 @@ export default function HomePage() {
                   tabIndex={0}
                 >
                   <div className="min-w-0">
-                    <p className={`font-semibold truncate ${w.done ? "line-through text-cute-muted" : ""}`}>
+                    <p
+                      className={`font-semibold truncate ${
+                        w.done ? "line-through text-cute-muted" : ""
+                      }`}
+                    >
                       {w.text}
                     </p>
-                    <p className="text-xs text-cute-muted mt-1">Someday ✨ (tap to mark done)</p>
+                    <p className="text-xs text-cute-muted mt-1">
+                      Someday ✨ (tap to mark done)
+                    </p>
                   </div>
 
                   <button
@@ -1095,9 +1154,9 @@ export default function HomePage() {
               ))}
 
               {wishlistSoon.length === 0 && (
-                <div className="mt-3 text-center">
-                  <p className="text-sm text-cute-muted">Nothing here yet — add a little dream 💭</p>
-                </div>
+                <p className="text-sm text-cute-muted">
+                  Nothing here yet — add a little dream 💭
+                </p>
               )}
             </div>
           </div>
@@ -1145,7 +1204,7 @@ export default function HomePage() {
             className="bg-white w-full rounded-t-[28px] p-6 animate-slideUp shadow-[0_-20px_60px_rgba(0,0,0,0.25)]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Picker (2x2, cute icons) */}
+            {/* Picker (2x2) */}
             {createMode === "pick" && (
               <>
                 <div className="flex items-center justify-between mb-3">
@@ -1164,7 +1223,10 @@ export default function HomePage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <button className="pick-btn pick-event" onClick={() => setCreateMode("event")}>
+                  <button
+                    className="pick-btn pick-event"
+                    onClick={() => setCreateMode("event")}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
                         <Sparkles />
@@ -1176,7 +1238,10 @@ export default function HomePage() {
                     </div>
                   </button>
 
-                  <button className="pick-btn pick-trip" onClick={() => setCreateMode("trip")}>
+                  <button
+                    className="pick-btn pick-trip"
+                    onClick={() => setCreateMode("trip")}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
                         <Plane />
@@ -1308,7 +1373,13 @@ export default function HomePage() {
                   <button
                     onClick={createEvent}
                     className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-                    disabled={!name || !eventStartDate || !eventEndDate || !startTime || !endTime}
+                    disabled={
+                      !name ||
+                      !eventStartDate ||
+                      !eventEndDate ||
+                      !startTime ||
+                      !endTime
+                    }
                   >
                     Create Event
                   </button>
