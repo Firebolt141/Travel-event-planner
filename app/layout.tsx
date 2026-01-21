@@ -1,33 +1,34 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ThemeClient from "./components/ThemeClient";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
+// If you already have metadata/icons/manifest here, copy-paste those back in.
 export const metadata: Metadata = {
-  title: "Meet Asuka",
-  description: "Plan trips, events, and todos with ease",
+  title: "Asuka Planner",
+  description: "Events • Trips • TODOs • Wishlist",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <head>
+        {/* Prevent theme flash: set theme before React loads */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(function() {
+  try {
+    var t = localStorage.getItem("asukaTheme");
+    var theme = (t === "night") ? "night" : "day";
+    document.documentElement.dataset.theme = theme;
+  } catch (e) {}
+})();
+            `.trim(),
+          }}
+        />
+      </head>
+      <body>
+        <ThemeClient>{children}</ThemeClient>
       </body>
     </html>
   );
