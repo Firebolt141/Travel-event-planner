@@ -30,6 +30,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "./components/ThemeClient";
 
 /* ---------------- DATE HELPERS ---------------- */
 function formatDate(date: Date) {
@@ -45,7 +46,6 @@ function isDateInRange(dateStr: string, startStr: string, endStr?: string) {
 }
 
 type CreateMode = "pick" | "event" | "trip" | "todo" | "wishlist";
-type ThemeMode = "day" | "night";
 
 type GlobalTodo = {
   id: string;
@@ -82,108 +82,65 @@ function dailyMood(todayStr: string) {
     "Today feels like a good day to plan 🌤️",
   ];
   let hash = 0;
-  for (let i = 0; i < todayStr.length; i++) {
-    hash = (hash * 31 + todayStr.charCodeAt(i)) >>> 0;
-  }
+  for (let i = 0; i < todayStr.length; i++) hash = (hash * 31 + todayStr.charCodeAt(i)) >>> 0;
   return moods[hash % moods.length];
 }
 
-function SunshineBuddy({
-  size = 120,
-  label = "Asuka buddy",
-}: {
-  size?: number;
-  label?: string;
-}) {
+/* ---------------- CUTE ANIMALS ---------------- */
+function SleepyCat({ size = 96, label = "Sleepy cat" }: { size?: number; label?: string }) {
+  // Tiny SVG cat with blink + float
   return (
     <div className="cute-float" aria-label={label} title={label}>
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 140 140"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        style={{ display: "block" }}
-      >
+      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
         <path
-          d="M26 66c0-28 18-46 44-46s44 18 44 46-18 54-44 54-44-26-44-54Z"
-          fill="rgba(255,255,255,0.55)"
+          d="M30 64c0-18 12-30 30-30s30 12 30 30-12 34-30 34-30-16-30-34Z"
+          fill="rgba(255,255,255,0.85)"
+          stroke="rgba(17,24,39,0.12)"
         />
-        <circle cx="92" cy="44" r="18" fill="rgba(250,204,21,0.95)" />
-        <circle cx="92" cy="44" r="18" fill="url(#g1)" opacity="0.35" />
-        <g
-          opacity="0.75"
-          stroke="rgba(250,204,21,0.9)"
-          strokeWidth="4"
-          strokeLinecap="round"
-        >
-          <path d="M92 16v6" />
-          <path d="M92 66v6" />
-          <path d="M64 44h6" />
-          <path d="M114 44h6" />
-          <path d="M73 25l4 4" />
-          <path d="M107 59l4 4" />
-          <path d="M73 63l4-4" />
-          <path d="M107 29l4-4" />
+        <path d="M38 40l-10 12c-2 2-1 6 2 6h12" fill="rgba(255,255,255,0.85)" stroke="rgba(17,24,39,0.12)" />
+        <path d="M82 40l10 12c2 2 1 6-2 6H78" fill="rgba(255,255,255,0.85)" stroke="rgba(17,24,39,0.12)" />
+        <g className="buddy-blink" stroke="rgba(31,41,55,0.65)" strokeWidth="4" strokeLinecap="round">
+          <path d="M46 66c6 4 12 4 18 0" />
+          <path d="M56 66c6 4 12 4 18 0" />
         </g>
+        <path d="M60 74l-2 2 2 2 2-2-2-2Z" fill="rgba(244,114,182,0.9)" />
+        <path d="M60 78c-6 6-12 6-18 0" stroke="rgba(31,41,55,0.5)" strokeWidth="3" strokeLinecap="round" />
+        <path d="M26 84c10 6 20 6 30 0" stroke="rgba(167,139,250,0.7)" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
+      </svg>
+    </div>
+  );
+}
 
-        <path
-          d="M44 78c0-18 12-30 26-30s26 12 26 30-12 34-26 34-26-16-26-34Z"
-          fill="rgba(255,255,255,0.92)"
-          stroke="rgba(17,24,39,0.10)"
-        />
-        <path
-          d="M52 54l-8 10c-2 2-1 6 2 6h10"
-          fill="rgba(255,255,255,0.92)"
-          stroke="rgba(17,24,39,0.10)"
-        />
-        <path
-          d="M88 54l8 10c2 2 1 6-2 6H84"
-          fill="rgba(255,255,255,0.92)"
-          stroke="rgba(17,24,39,0.10)"
-        />
-
-        <g
-          className="buddy-blink"
-          opacity="0.9"
-          stroke="rgba(31,41,55,0.75)"
-          strokeWidth="4"
-          strokeLinecap="round"
-        >
-          <path d="M58 78c4 3 8 3 12 0" />
-          <path d="M70 78c4 3 8 3 12 0" />
+function DreamBunny({ size = 96, label = "Dream bunny" }: { size?: number; label?: string }) {
+  return (
+    <div className="cute-float" aria-label={label} title={label}>
+      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+        <path d="M44 30c-2-10 4-18 12-18s14 8 12 18" stroke="rgba(244,114,182,0.75)" strokeWidth="6" strokeLinecap="round" />
+        <path d="M52 30c-2-10 4-18 12-18s14 8 12 18" stroke="rgba(167,139,250,0.75)" strokeWidth="6" strokeLinecap="round" />
+        <ellipse cx="60" cy="68" rx="30" ry="26" fill="rgba(255,255,255,0.85)" stroke="rgba(17,24,39,0.12)" />
+        <g className="buddy-blink" stroke="rgba(31,41,55,0.65)" strokeWidth="4" strokeLinecap="round">
+          <path d="M48 66c6 4 12 4 18 0" />
+          <path d="M56 66c6 4 12 4 18 0" />
         </g>
+        <circle cx="60" cy="74" r="3" fill="rgba(244,114,182,0.9)" />
+        <path d="M60 78c-4 4-8 4-12 0" stroke="rgba(31,41,55,0.5)" strokeWidth="3" strokeLinecap="round" />
+        <path d="M86 46l3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6Z" fill="rgba(250,204,21,0.9)" opacity="0.9" />
+      </svg>
+    </div>
+  );
+}
 
-        <path
-          d="M70 86l-2 2 2 2 2-2-2-2Z"
-          fill="rgba(244,114,182,0.9)"
-        />
-        <path
-          d="M70 90c-6 6-12 6-18 0"
-          stroke="rgba(31,41,55,0.55)"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-
-        <path
-          d="M44 40l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z"
-          fill="rgba(244,114,182,0.85)"
-          opacity="0.9"
-        />
-
-        <defs>
-          <radialGradient
-            id="g1"
-            cx="0"
-            cy="0"
-            r="1"
-            gradientUnits="userSpaceOnUse"
-            gradientTransform="translate(90 38) rotate(90) scale(26)"
-          >
-            <stop stopColor="white" />
-            <stop offset="1" stopColor="white" stopOpacity="0" />
-          </radialGradient>
-        </defs>
+function TinyBird({ size = 96, label = "Tiny bird" }: { size?: number; label?: string }) {
+  return (
+    <div className="cute-float" aria-label={label} title={label}>
+      <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+        <ellipse cx="56" cy="70" rx="26" ry="22" fill="rgba(255,255,255,0.85)" stroke="rgba(17,24,39,0.12)" />
+        <circle cx="78" cy="66" r="12" fill="rgba(255,255,255,0.85)" stroke="rgba(17,24,39,0.12)" />
+        <path d="M90 68l14 6-14 6" fill="rgba(250,204,21,0.9)" />
+        <g className="buddy-blink" stroke="rgba(31,41,55,0.65)" strokeWidth="4" strokeLinecap="round">
+          <path d="M72 66c5 3 10 3 15 0" />
+        </g>
+        <path d="M46 84c10 8 22 8 32 0" stroke="rgba(96,165,250,0.65)" strokeWidth="4" strokeLinecap="round" opacity="0.85" />
       </svg>
     </div>
   );
@@ -220,6 +177,8 @@ function ConfettiBurst({ show }: { show: boolean }) {
 
 /* ---------------- PAGE ---------------- */
 export default function HomePage() {
+  const { theme, toggleTheme } = useTheme();
+
   const [user, setUser] = useState<any>(null);
 
   const [events, setEvents] = useState<any[]>([]);
@@ -230,18 +189,13 @@ export default function HomePage() {
   const today = new Date();
   const todayStr = formatDate(today);
 
-  const [theme, setTheme] = useState<ThemeMode>("day");
-
-  const [currentMonth, setCurrentMonth] = useState(
-    new Date(today.getFullYear(), today.getMonth(), 1)
-  );
+  const [currentMonth, setCurrentMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(todayStr);
 
   const [showModal, setShowModal] = useState(false);
   const [createMode, setCreateMode] = useState<CreateMode>("pick");
 
   const [name, setName] = useState("");
-
   const [tripStartDate, setTripStartDate] = useState("");
   const [tripEndDate, setTripEndDate] = useState("");
 
@@ -261,35 +215,13 @@ export default function HomePage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimer = useRef<number | null>(null);
 
-  /* Theme: read & store in localStorage; CSS driven by data-theme on wrapper */
-  useEffect(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("asukaTheme") : null;
-    setTheme(saved === "night" ? "night" : "day");
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem("asukaTheme", theme);
-  }, [theme]);
-
-  function goPrevMonth() {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
-    );
-  }
-  function goNextMonth() {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
-    );
-  }
-
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
         return;
       }
-      const demo =
-        typeof window !== "undefined" && localStorage.getItem("demoUser") === "1";
+      const demo = typeof window !== "undefined" && localStorage.getItem("demoUser") === "1";
       if (demo) setUser({ name: "Demo User", demo: true });
       else setUser(null);
     });
@@ -321,20 +253,15 @@ export default function HomePage() {
     };
   }, []);
 
-  /* ---------------- CALENDAR DATA ---------------- */
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const days: (number | null)[] = useMemo(() => {
-    return [
-      ...Array(firstDay).fill(null),
-      ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-    ];
+    return [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   }, [firstDay, daysInMonth]);
 
-  /* ---------------- LISTS & FILTERS ---------------- */
   const tripTodosForDate = useMemo(() => {
     return (trips || []).flatMap((trip) =>
       (trip.todos || [])
@@ -358,20 +285,6 @@ export default function HomePage() {
     return [...globalTodosForDate, ...tripTodosForDate];
   }, [globalTodosForDate, tripTodosForDate]);
 
-  const eventsSoon = useMemo(() => {
-    const sorted = [...(events || [])].sort((a, b) =>
-      String(a.startDate || "").localeCompare(String(b.startDate || ""))
-    );
-    return sorted.slice(0, 6);
-  }, [events]);
-
-  const tripsSoon = useMemo(() => {
-    const sorted = [...(trips || [])].sort((a, b) =>
-      String(a.startDate || "").localeCompare(String(b.startDate || ""))
-    );
-    return sorted.slice(0, 6);
-  }, [trips]);
-
   const todosSoon = useMemo(() => {
     const fromTrips = (trips || []).flatMap((trip) =>
       (trip.todos || []).map((todo: any) => ({
@@ -382,31 +295,30 @@ export default function HomePage() {
       }))
     );
 
-    const fromGlobal = (globalTodos || []).map((t) => ({
-      ...t,
-      source: "global" as const,
-    }));
-
+    const fromGlobal = (globalTodos || []).map((t) => ({ ...t, source: "global" as const }));
     const all = [...fromGlobal, ...fromTrips];
-    all.sort((a: any, b: any) =>
-      String(a.dueDate || "").localeCompare(String(b.dueDate || ""))
-    );
+    all.sort((a: any, b: any) => String(a.dueDate || "").localeCompare(String(b.dueDate || "")));
     return all.slice(0, 10);
   }, [trips, globalTodos]);
 
+  const eventsSoon = useMemo(() => {
+    const sorted = [...(events || [])].sort((a, b) => String(a.startDate || "").localeCompare(String(b.startDate || "")));
+    return sorted.slice(0, 6);
+  }, [events]);
+
+  const tripsSoon = useMemo(() => {
+    const sorted = [...(trips || [])].sort((a, b) => String(a.startDate || "").localeCompare(String(b.startDate || "")));
+    return sorted.slice(0, 6);
+  }, [trips]);
+
   const wishlistSoon = useMemo(() => {
-    const sorted = [...(wishlist || [])].sort((a, b) =>
-      String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
-    );
+    const sorted = [...(wishlist || [])].sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
     return sorted.slice(0, 10);
   }, [wishlist]);
 
-  /* Progress feel (today only) */
   const todaysTodos = useMemo(() => {
     const forToday = (globalTodos || []).filter((t) => t.dueDate === todayStr);
-    const tripForToday = (trips || []).flatMap((trip) =>
-      (trip.todos || []).filter((todo: any) => todo.dueDate === todayStr)
-    );
+    const tripForToday = (trips || []).flatMap((trip) => (trip.todos || []).filter((todo: any) => todo.dueDate === todayStr));
     return [...forToday, ...tripForToday];
   }, [globalTodos, trips, todayStr]);
 
@@ -418,18 +330,15 @@ export default function HomePage() {
   useEffect(() => {
     if (!todayAllDone) return;
     const key = `asuka_confetti_done_${todayStr}`;
-    const already =
-      typeof window !== "undefined" ? sessionStorage.getItem(key) : "1";
+    const already = typeof window !== "undefined" ? sessionStorage.getItem(key) : "1";
     if (already) return;
 
     sessionStorage.setItem(key, "1");
     setShowConfetti(true);
-
     if (confettiTimer.current) window.clearTimeout(confettiTimer.current);
     confettiTimer.current = window.setTimeout(() => setShowConfetti(false), 1200);
   }, [todayAllDone, todayStr]);
 
-  /* ---------------- ACTIONS ---------------- */
   function resetModalInputs() {
     setName("");
     setTripStartDate("");
@@ -447,19 +356,13 @@ export default function HomePage() {
 
   async function createTrip() {
     if (!name || !tripStartDate || !tripEndDate) return;
-    await addDoc(collection(db, "trips"), {
-      name,
-      startDate: tripStartDate,
-      endDate: tripEndDate,
-    });
+    await addDoc(collection(db, "trips"), { name, startDate: tripStartDate, endDate: tripEndDate });
     setShowModal(false);
     resetModalInputs();
   }
 
   async function createEvent() {
-    if (!name || !eventStartDate || !eventEndDate || !startTime || !endTime)
-      return;
-
+    if (!name || !eventStartDate || !eventEndDate || !startTime || !endTime) return;
     await addDoc(collection(db, "events"), {
       name,
       startDate: eventStartDate,
@@ -468,21 +371,18 @@ export default function HomePage() {
       endTime,
       location,
     });
-
     setShowModal(false);
     resetModalInputs();
   }
 
   async function createGlobalTodo() {
     if (!todoText || !todoDue) return;
-
     await addDoc(collection(db, "todos"), {
       text: todoText,
       dueDate: todoDue,
       done: false,
       createdAt: new Date().toISOString(),
     });
-
     setShowModal(false);
     resetModalInputs();
   }
@@ -490,20 +390,17 @@ export default function HomePage() {
   async function toggleGlobalTodo(todo: GlobalTodo) {
     await updateDoc(doc(db, "todos", todo.id), { done: !todo.done });
   }
-
   async function deleteGlobalTodo(todo: GlobalTodo) {
     await deleteDoc(doc(db, "todos", todo.id));
   }
 
   async function createWishlistItem() {
     if (!wishText) return;
-
     await addDoc(collection(db, "wishlist"), {
       text: wishText,
       done: false,
       createdAt: new Date().toISOString(),
     });
-
     setShowModal(false);
     resetModalInputs();
   }
@@ -511,21 +408,6 @@ export default function HomePage() {
   async function toggleWishlistItem(item: WishlistItem) {
     const nextDone = !item.done;
     await updateDoc(doc(db, "wishlist", item.id), { done: nextDone });
-
-    if (nextDone) {
-      const key = `asuka_confetti_wish_${item.id}`;
-      const already =
-        typeof window !== "undefined" ? sessionStorage.getItem(key) : "1";
-      if (!already) {
-        sessionStorage.setItem(key, "1");
-        setShowConfetti(true);
-        if (confettiTimer.current) window.clearTimeout(confettiTimer.current);
-        confettiTimer.current = window.setTimeout(
-          () => setShowConfetti(false),
-          1100
-        );
-      }
-    }
   }
 
   async function deleteWishlistItem(item: WishlistItem) {
@@ -535,49 +417,35 @@ export default function HomePage() {
   const headerMood = dailyMood(todayStr);
   const season = seasonEmoji(today.getMonth());
 
-  /* ---------------- LOGIN SCREEN ---------------- */
+  /* ---------------- LOGIN ---------------- */
   if (!user) {
     return (
-      <main
-        data-theme={theme}
-        className="min-h-screen bg-cute text-cute-ink relative overflow-hidden flex items-center justify-center px-5"
-      >
+      <main className="min-h-screen bg-cute text-cute-ink relative overflow-hidden flex items-center justify-center px-5">
         <ConfettiBurst show={showConfetti} />
 
-        <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-white/40 blur-2xl" />
-        <div className="pointer-events-none absolute top-24 -right-24 w-80 h-80 rounded-full bg-white/35 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-24 left-1/3 w-96 h-96 rounded-full bg-white/30 blur-3xl" />
+        <div className="login-blob blob1" />
+        <div className="login-blob blob2" />
+        <div className="login-blob blob3" />
 
         <div className="max-w-md w-full">
           <div className="card-cute text-left">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-cute-muted">Welcome back</p>
-                <h1 className="text-4xl font-extrabold tracking-tight">
-                  Asuka ✨
-                </h1>
-                <p className="text-sm text-cute-muted mt-1">
-                  Events • Trips • TODOs • Wishlist
-                </p>
+                <h1 className="text-4xl font-extrabold tracking-tight">Asuka ✨</h1>
+                <p className="text-sm text-cute-muted mt-1">Events • Trips • TODOs • Wishlist</p>
               </div>
 
-              <button
-                className="mini-nav"
-                onClick={() => setTheme((t) => (t === "day" ? "night" : "day"))}
-                aria-label="Toggle theme"
-                title="Toggle theme"
-              >
+              <button className="mini-nav" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
                 {theme === "day" ? <Moon size={18} /> : <Sun size={18} />}
               </button>
             </div>
 
             <div className="mt-4 flex items-center justify-center">
-              <SunshineBuddy size={150} label="Asuka sunshine buddy" />
+              <SleepyCat size={140} label="Sleepy cat buddy" />
             </div>
 
-            <p className="text-sm text-cute-muted mt-2 text-center">
-              “Tomorrow’s sunshine” vibes 🌤️
-            </p>
+            <p className="text-sm text-cute-muted mt-2 text-center">Tomorrow’s sunshine vibes 🌤️</p>
 
             <button
               className="mt-5 w-full px-8 py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute hover:opacity-95 active:scale-[0.99] transition"
@@ -588,25 +456,17 @@ export default function HomePage() {
             >
               Let’s go!
             </button>
-
-            <p className="text-xs text-cute-muted mt-3">
-              Demo login (local only).
-            </p>
           </div>
         </div>
       </main>
     );
   }
 
-  /* ---------------- MAIN UI ---------------- */
+  /* ---------------- MAIN ---------------- */
   return (
-    <div
-      data-theme={theme}
-      className="min-h-screen bg-cute text-cute-ink pb-28"
-    >
+    <div className="min-h-screen bg-cute text-cute-ink pb-28">
       <ConfettiBurst show={showConfetti} />
 
-      {/* HEADER */}
       <header className="px-5 pt-6 pb-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -614,10 +474,7 @@ export default function HomePage() {
             <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
               Planner <PartyPopper className="opacity-80" size={22} />
             </h1>
-
-            <p className="text-sm text-cute-muted mt-1">
-              {todayAllDone ? "Nothing urgent — enjoy! 💤" : headerMood}
-            </p>
+            <p className="text-sm text-cute-muted mt-1">{todayAllDone ? "Nothing urgent — enjoy! 💤" : headerMood}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -626,12 +483,7 @@ export default function HomePage() {
               <span className="text-sm font-semibold">{todayStr}</span>
             </div>
 
-            <button
-              className="mini-nav"
-              onClick={() => setTheme((t) => (t === "day" ? "night" : "day"))}
-              aria-label="Toggle theme"
-              title="Toggle theme"
-            >
+            <button className="mini-nav" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
               {theme === "day" ? <Moon size={18} /> : <Sun size={18} />}
             </button>
           </div>
@@ -641,7 +493,6 @@ export default function HomePage() {
       {/* CALENDAR FIRST */}
       <section className="px-5">
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          {/* Calendar */}
           <div className="card-cute">
             <div className="flex items-center justify-between mb-3">
               <span className="badge badge-mint">
@@ -650,60 +501,28 @@ export default function HomePage() {
               </span>
 
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() =>
-                    setCurrentMonth(
-                      new Date(
-                        currentMonth.getFullYear(),
-                        currentMonth.getMonth() - 1,
-                        1
-                      )
-                    )
-                  }
-                  className="mini-nav"
-                  aria-label="Previous month"
-                >
+                <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="mini-nav" aria-label="Previous month">
                   <ChevronLeft size={18} />
                 </button>
 
                 <h2 className="text-sm font-semibold">
-                  {currentMonth.toLocaleString("default", {
-                    month: "long",
-                    year: "numeric",
-                  })}
+                  {currentMonth.toLocaleString("default", { month: "long", year: "numeric" })}
                 </h2>
 
-                <button
-                  onClick={() =>
-                    setCurrentMonth(
-                      new Date(
-                        currentMonth.getFullYear(),
-                        currentMonth.getMonth() + 1,
-                        1
-                      )
-                    )
-                  }
-                  className="mini-nav"
-                  aria-label="Next month"
-                >
+                <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="mini-nav" aria-label="Next month">
                   <ChevronRight size={18} />
                 </button>
               </div>
             </div>
 
-            {/* Days Header */}
             <div className="grid grid-cols-7 gap-2 mb-2">
               {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                <div
-                  key={`${d}-${i}`}
-                  className="text-center text-xs text-cute-muted"
-                >
+                <div key={`${d}-${i}`} className="text-center text-xs text-cute-muted">
                   {d}
                 </div>
               ))}
             </div>
 
-            {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-2">
               {days.map((day, i) => {
                 if (!day) return <div key={`e-${i}`} />;
@@ -713,23 +532,15 @@ export default function HomePage() {
                 const isPast = dateStr < todayStr;
 
                 const hasEvent = events.some((e) => e.startDate === dateStr);
-                const hasTrip = trips.some((t) =>
-                  isDateInRange(dateStr, t.startDate, t.endDate)
-                );
+                const hasTrip = trips.some((t) => isDateInRange(dateStr, t.startDate, t.endDate));
 
-                const tripTodosOnDay = trips.flatMap((t) =>
-                  (t.todos || []).filter((todo: any) => todo.dueDate === dateStr)
-                );
-                const globalTodosOnDay = globalTodos.filter(
-                  (t) => t.dueDate === dateStr
-                );
-
+                const tripTodosOnDay = trips.flatMap((t) => (t.todos || []).filter((todo: any) => todo.dueDate === dateStr));
+                const globalTodosOnDay = globalTodos.filter((t) => t.dueDate === dateStr);
                 const todosOnDay = [...globalTodosOnDay, ...tripTodosOnDay];
                 const hasDeadline = todosOnDay.length > 0;
 
                 const hasPendingTodo = todosOnDay.some((todo: any) => !todo.done);
-                const hasCompletedTodo =
-                  todosOnDay.length > 0 && !hasPendingTodo;
+                const hasCompletedTodo = todosOnDay.length > 0 && !hasPendingTodo;
 
                 const baseClass = isSelected
                   ? "bg-cute-accent text-white"
@@ -751,49 +562,23 @@ export default function HomePage() {
                       "relative h-11 rounded-2xl text-sm font-semibold transition active:scale-[0.98]",
                       "shadow-[0_10px_30px_rgba(0,0,0,0.08)]",
                       baseClass,
-                      isSelected
-                        ? ""
-                        : isPast
-                        ? "text-gray-400"
-                        : "text-cute-ink",
                       isPast && !isSelected ? "opacity-70" : "",
                     ].join(" ")}
                   >
                     {day}
 
                     <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
-                      {hasEvent && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                      )}
-                      {hasTrip && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                      )}
-                      {hasDeadline && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                      )}
+                      {hasEvent && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                      {hasTrip && <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />}
+                      {hasDeadline && <span className="w-1.5 h-1.5 rounded-full bg-red-500" />}
                     </div>
                   </button>
                 );
               })}
             </div>
-
-            <div className="mt-4 flex flex-wrap gap-2 text-xs text-cute-muted">
-              <span className="inline-flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500" /> Event
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-purple-500" /> Trip
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-red-500" /> TODO deadline
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-gray-400" /> Past date
-              </span>
-            </div>
           </div>
 
-          {/* Selected Date Details */}
+          {/* Details */}
           <div className="card-cute">
             <div className="flex items-center justify-between mb-2">
               <span className="badge badge-sun">
@@ -806,87 +591,57 @@ export default function HomePage() {
               </span>
             </div>
 
-            {/* EVENTS + TRIPS */}
             <div className="mt-3">
               <p className="text-xs text-cute-muted mb-2">EVENTS & TRIPS</p>
 
-              {events
-                .filter((e) => e.startDate === selectedDate)
-                .map((event) => (
-                  <div
-                    key={event.id}
-                    onClick={() => router.push(`/event/${event.id}`)}
-                    className="detail-pill detail-blue"
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <p className="font-semibold">{event.name}</p>
-                    <p className="text-xs opacity-80">
-                      {event.startTime} → {event.endTime}
-                      {event.location ? ` • ${event.location}` : ""}
-                    </p>
-                  </div>
-                ))}
+              {events.filter((e) => e.startDate === selectedDate).map((event) => (
+                <div key={event.id} onClick={() => router.push(`/event/${event.id}`)} className="detail-pill detail-blue" role="button" tabIndex={0}>
+                  <p className="font-semibold">{event.name}</p>
+                  <p className="text-xs opacity-80">
+                    {event.startTime} → {event.endTime}
+                    {event.location ? ` • ${event.location}` : ""}
+                  </p>
+                </div>
+              ))}
 
-              {trips
-                .filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate))
-                .map((trip) => (
-                  <div
-                    key={trip.id}
-                    onClick={() => router.push(`/trip/${trip.id}`)}
-                    className="detail-pill detail-purple"
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <p className="font-semibold">{trip.name}</p>
-                    <p className="text-xs opacity-80">
-                      {trip.startDate} → {trip.endDate}
-                    </p>
-                  </div>
-                ))}
+              {trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate)).map((trip) => (
+                <div key={trip.id} onClick={() => router.push(`/trip/${trip.id}`)} className="detail-pill detail-purple" role="button" tabIndex={0}>
+                  <p className="font-semibold">{trip.name}</p>
+                  <p className="text-xs opacity-80">
+                    {trip.startDate} → {trip.endDate}
+                  </p>
+                </div>
+              ))}
 
               {events.filter((e) => e.startDate === selectedDate).length === 0 &&
-                trips.filter((t) =>
-                  isDateInRange(selectedDate, t.startDate, t.endDate)
-                ).length === 0 && (
+                trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate)).length === 0 && (
                   <div className="mt-3 text-center">
                     <div className="flex justify-center">
-                      <SunshineBuddy size={90} label="Empty state buddy" />
+                      <TinyBird size={90} />
                     </div>
-                    <p className="text-sm text-cute-muted mt-2">
-                      Nothing planned here yet ✨
-                    </p>
+                    <p className="text-sm text-cute-muted mt-2">Nothing planned here yet ✨</p>
                   </div>
                 )}
             </div>
 
-            {/* TODO DEADLINES */}
             <div className="mt-5">
               <p className="text-xs text-cute-muted mb-2">TODO DEADLINES</p>
 
               {todosForDateCombined.map((todo: any, i: number) => {
                 const isGlobal = todo.source === "global";
-
                 return (
                   <div
                     key={`${todo.source}-${todo.id || todo.tripId}-${todo.text}-${i}`}
-                    onClick={() => {
-                      if (isGlobal) toggleGlobalTodo(todo);
-                      else router.push(`/trip/${todo.tripId}`);
-                    }}
+                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : router.push(`/trip/${todo.tripId}`))}
                     className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
                     role="button"
                     tabIndex={0}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className={`font-semibold ${todo.done ? "line-through opacity-80" : ""}`}>
-                          {todo.text}
-                        </p>
+                        <p className={`font-semibold ${todo.done ? "line-through opacity-80" : ""}`}>{todo.text}</p>
                         <p className="text-xs opacity-80">
-                          {isGlobal
-                            ? `Global • Due: ${todo.dueDate}`
-                            : `${todo.tripName} • PIC: ${todo.pic}`}
+                          {isGlobal ? `Global • Due: ${todo.dueDate}` : `${todo.tripName} • PIC: ${todo.pic}`}
                         </p>
                       </div>
 
@@ -909,7 +664,12 @@ export default function HomePage() {
               })}
 
               {todosForDateCombined.length === 0 && (
-                <p className="text-sm text-cute-muted">No deadlines — breathe 🌿</p>
+                <div className="mt-3 text-center">
+                  <div className="flex justify-center">
+                    <SleepyCat size={88} />
+                  </div>
+                  <p className="text-sm text-cute-muted mt-2">No deadlines — cozy day ☕</p>
+                </div>
               )}
             </div>
           </div>
@@ -933,23 +693,14 @@ export default function HomePage() {
 
             <div className="space-y-2">
               {eventsSoon.map((event) => (
-                <div
-                  key={event.id}
-                  className="row-cute"
-                  onClick={() => router.push(`/event/${event.id}`)}
-                  role="button"
-                  tabIndex={0}
-                >
+                <div key={event.id} className="row-cute" onClick={() => router.push(`/event/${event.id}`)} role="button" tabIndex={0}>
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{event.name}</p>
-
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-cute-muted">
                       <span className="inline-flex items-center gap-1">
                         <Clock size={13} />
-                        {event.startDate} {event.startTime} → {event.endDate}{" "}
-                        {event.endTime}
+                        {event.startDate} {event.startTime} → {event.endDate} {event.endTime}
                       </span>
-
                       {event.location ? (
                         <span className="inline-flex items-center gap-1">
                           <MapPin size={13} />
@@ -974,9 +725,10 @@ export default function HomePage() {
               ))}
 
               {eventsSoon.length === 0 && (
-                <p className="text-sm text-cute-muted">
-                  No events yet — add a little joy ✨
-                </p>
+                <div className="mt-2 text-center">
+                  <DreamBunny size={88} />
+                  <p className="text-sm text-cute-muted mt-2">No events yet — add a little joy ✨</p>
+                </div>
               )}
             </div>
           </div>
@@ -995,13 +747,7 @@ export default function HomePage() {
 
             <div className="space-y-2">
               {tripsSoon.map((trip) => (
-                <div
-                  key={trip.id}
-                  className="row-cute"
-                  onClick={() => router.push(`/trip/${trip.id}`)}
-                  role="button"
-                  tabIndex={0}
-                >
+                <div key={trip.id} className="row-cute" onClick={() => router.push(`/trip/${trip.id}`)} role="button" tabIndex={0}>
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{trip.name}</p>
                     <p className="text-xs text-cute-muted mt-1">
@@ -1024,9 +770,10 @@ export default function HomePage() {
               ))}
 
               {tripsSoon.length === 0 && (
-                <p className="text-sm text-cute-muted">
-                  No trips yet — someday? 🧳
-                </p>
+                <div className="mt-2 text-center">
+                  <TinyBird size={88} />
+                  <p className="text-sm text-cute-muted mt-2">No trips yet — someday? 🧳</p>
+                </div>
               )}
             </div>
           </div>
@@ -1039,9 +786,7 @@ export default function HomePage() {
                   <CheckSquare size={14} />
                   TODOs
                 </span>
-                <span className="text-xs text-cute-muted">
-                  global + trip deadlines
-                </span>
+                <span className="text-xs text-cute-muted">global + trip deadlines</span>
               </div>
             </div>
 
@@ -1052,26 +797,14 @@ export default function HomePage() {
                   <div
                     key={`${todo.source}-${todo.id || todo.tripId}-${todo.text}-${todo.dueDate}-${i}`}
                     className={`row-cute ${todo.done ? "opacity-80" : ""}`}
-                    onClick={() => {
-                      if (isGlobal) toggleGlobalTodo(todo);
-                      else router.push(`/trip/${todo.tripId}`);
-                    }}
+                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : router.push(`/trip/${todo.tripId}`))}
                     role="button"
                     tabIndex={0}
                   >
                     <div className="min-w-0">
-                      <p
-                        className={`font-semibold truncate ${
-                          todo.done ? "line-through text-cute-muted" : ""
-                        }`}
-                      >
-                        {todo.text}
-                      </p>
-
+                      <p className={`font-semibold truncate ${todo.done ? "line-through text-cute-muted" : ""}`}>{todo.text}</p>
                       <p className="text-xs text-cute-muted mt-1">
-                        {isGlobal
-                          ? `Global • Due: ${todo.dueDate}`
-                          : `${todo.tripName} • PIC: ${todo.pic} • Due: ${todo.dueDate}`}
+                        {isGlobal ? `Global • Due: ${todo.dueDate}` : `${todo.tripName} • PIC: ${todo.pic} • Due: ${todo.dueDate}`}
                       </p>
                     </div>
 
@@ -1093,13 +826,9 @@ export default function HomePage() {
               })}
 
               {todosSoon.length === 0 && (
-                <div className="mt-3 text-center">
-                  <div className="flex justify-center">
-                    <SunshineBuddy size={88} label="No todos buddy" />
-                  </div>
-                  <p className="text-sm text-cute-muted mt-2">
-                    No deadlines — cozy day ☕
-                  </p>
+                <div className="mt-2 text-center">
+                  <SleepyCat size={88} />
+                  <p className="text-sm text-cute-muted mt-2">No deadlines — breathe 🌿</p>
                 </div>
               )}
             </div>
@@ -1109,7 +838,7 @@ export default function HomePage() {
           <div className="card-cute">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="badge" style={{ color: "#db2777" }}>
+                <span className="badge" style={{ color: "#f9a8d4" }}>
                   <Heart size={14} />
                   Wishlist
                 </span>
@@ -1127,16 +856,8 @@ export default function HomePage() {
                   tabIndex={0}
                 >
                   <div className="min-w-0">
-                    <p
-                      className={`font-semibold truncate ${
-                        w.done ? "line-through text-cute-muted" : ""
-                      }`}
-                    >
-                      {w.text}
-                    </p>
-                    <p className="text-xs text-cute-muted mt-1">
-                      Someday ✨ (tap to mark done)
-                    </p>
+                    <p className={`font-semibold truncate ${w.done ? "line-through text-cute-muted" : ""}`}>{w.text}</p>
+                    <p className="text-xs text-cute-muted mt-1">Someday ✨ (tap to mark done)</p>
                   </div>
 
                   <button
@@ -1154,9 +875,10 @@ export default function HomePage() {
               ))}
 
               {wishlistSoon.length === 0 && (
-                <p className="text-sm text-cute-muted">
-                  Nothing here yet — add a little dream 💭
-                </p>
+                <div className="mt-2 text-center">
+                  <DreamBunny size={88} />
+                  <p className="text-sm text-cute-muted mt-2">Nothing here yet — add a little dream 💭</p>
+                </div>
               )}
             </div>
           </div>
@@ -1194,325 +916,175 @@ export default function HomePage() {
       {/* Create Modal */}
       {showModal && (
         <div
-          className="fixed inset-0 bg-black/30 flex items-end"
+          className="fixed inset-0 bg-black/35 flex items-end"
           onClick={() => {
             setShowModal(false);
             resetModalInputs();
           }}
         >
           <div
-            className="bg-white w-full rounded-t-[28px] p-6 animate-slideUp shadow-[0_-20px_60px_rgba(0,0,0,0.25)]"
+            className="modal-sheet w-full rounded-t-[28px] p-6 shadow-[0_-20px_60px_rgba(0,0,0,0.35)]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Picker (2x2) */}
             {createMode === "pick" && (
               <>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-                    Add something ✨
-                  </p>
-                  <button
-                    className="mini-nav"
-                    onClick={() => {
-                      setShowModal(false);
-                      resetModalInputs();
-                    }}
-                  >
+                  <p className="text-lg font-extrabold tracking-tight">Add something ✨</p>
+                  <button className="mini-nav" onClick={() => { setShowModal(false); resetModalInputs(); }}>
                     ✕
                   </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    className="pick-btn pick-event"
-                    onClick={() => setCreateMode("event")}
-                  >
+                  <button className="pick-btn" onClick={() => setCreateMode("event")}>
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-2xl bg-white/30 shadow-cute flex items-center justify-center">
                         <Sparkles />
                       </div>
                       <div className="text-left">
                         <p className="font-extrabold leading-tight">Event</p>
-                        <p className="text-xs opacity-80">meetups</p>
+                        <p className="text-xs text-cute-muted">meetups</p>
                       </div>
                     </div>
                   </button>
 
-                  <button
-                    className="pick-btn pick-trip"
-                    onClick={() => setCreateMode("trip")}
-                  >
+                  <button className="pick-btn" onClick={() => setCreateMode("trip")}>
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-2xl bg-white/30 shadow-cute flex items-center justify-center">
                         <Plane />
                       </div>
                       <div className="text-left">
                         <p className="font-extrabold leading-tight">Trip</p>
-                        <p className="text-xs opacity-80">travel</p>
+                        <p className="text-xs text-cute-muted">travel</p>
                       </div>
                     </div>
                   </button>
 
-                  <button
-                    className="pick-btn"
-                    onClick={() => setCreateMode("todo")}
-                    style={{
-                      boxShadow:
-                        "inset 4px 0 0 rgba(239, 68, 68, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
-                    }}
-                  >
+                  <button className="pick-btn" onClick={() => setCreateMode("todo")}>
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-2xl bg-white/30 shadow-cute flex items-center justify-center">
                         <CheckSquare />
                       </div>
                       <div className="text-left">
                         <p className="font-extrabold leading-tight">TODO</p>
-                        <p className="text-xs opacity-80">deadline</p>
+                        <p className="text-xs text-cute-muted">deadline</p>
                       </div>
                     </div>
                   </button>
 
-                  <button
-                    className="pick-btn"
-                    onClick={() => setCreateMode("wishlist")}
-                    style={{
-                      boxShadow:
-                        "inset 4px 0 0 rgba(219, 39, 119, 0.55), 0 18px 45px rgba(0, 0, 0, 0.12)",
-                    }}
-                  >
+                  <button className="pick-btn" onClick={() => setCreateMode("wishlist")}>
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-white/70 shadow-cute flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-2xl bg-white/30 shadow-cute flex items-center justify-center">
                         <Heart />
                       </div>
                       <div className="text-left">
                         <p className="font-extrabold leading-tight">Wishlist</p>
-                        <p className="text-xs opacity-80">someday</p>
+                        <p className="text-xs text-cute-muted">someday</p>
                       </div>
                     </div>
                   </button>
                 </div>
-
-                <p className="text-xs text-cute-muted mt-3">
-                  Tip: TODO = deadline. Wishlist = no deadline.
-                </p>
               </>
             )}
 
-            {/* Event form */}
-            {createMode === "event" && (
-              <>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-                    Plan an Event ✨
-                  </p>
-                  <button className="mini-nav" onClick={() => setCreateMode("pick")}>
-                    ←
-                  </button>
-                </div>
+            {/* Forms (same as before, readable in night mode now) */}
+            {createMode !== "pick" && (
+              <div className="mt-2">
+                <button className="mini-nav mb-3" onClick={() => setCreateMode("pick")}>
+                  ←
+                </button>
 
-                <div className="space-y-3">
-                  <input
-                    placeholder="Event name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="cute-input"
-                  />
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="cute-label">Start date</p>
-                      <input
-                        type="date"
-                        value={eventStartDate}
-                        onChange={(e) => {
-                          setEventStartDate(e.target.value);
-                          if (!eventEndDate) setEventEndDate(e.target.value);
-                        }}
-                        className="cute-input"
-                      />
+                {createMode === "event" && (
+                  <div className="space-y-3">
+                    <p className="text-lg font-extrabold">Plan an Event ✨</p>
+                    <input placeholder="Event name" value={name} onChange={(e) => setName(e.target.value)} className="cute-input" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="cute-label">Start date</p>
+                        <input type="date" value={eventStartDate} onChange={(e) => { setEventStartDate(e.target.value); if (!eventEndDate) setEventEndDate(e.target.value); }} className="cute-input" />
+                      </div>
+                      <div>
+                        <p className="cute-label">End date</p>
+                        <input type="date" value={eventEndDate} onChange={(e) => setEventEndDate(e.target.value)} className="cute-input" />
+                      </div>
                     </div>
-                    <div>
-                      <p className="cute-label">End date</p>
-                      <input
-                        type="date"
-                        value={eventEndDate}
-                        onChange={(e) => setEventEndDate(e.target.value)}
-                        className="cute-input"
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="cute-label">Start time</p>
+                        <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="cute-input" />
+                      </div>
+                      <div>
+                        <p className="cute-label">End time</p>
+                        <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="cute-input" />
+                      </div>
                     </div>
+                    <input placeholder="Location (optional)" value={location} onChange={(e) => setLocation(e.target.value)} className="cute-input" />
+                    <button
+                      onClick={createEvent}
+                      className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
+                      disabled={!name || !eventStartDate || !eventEndDate || !startTime || !endTime}
+                    >
+                      Create Event
+                    </button>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="cute-label">Start time</p>
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        className="cute-input"
-                      />
+                {createMode === "trip" && (
+                  <div className="space-y-3">
+                    <p className="text-lg font-extrabold">Plan a Trip ✨</p>
+                    <input placeholder="Trip name" value={name} onChange={(e) => setName(e.target.value)} className="cute-input" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="cute-label">Start date</p>
+                        <input type="date" value={tripStartDate} onChange={(e) => setTripStartDate(e.target.value)} className="cute-input" />
+                      </div>
+                      <div>
+                        <p className="cute-label">End date</p>
+                        <input type="date" value={tripEndDate} onChange={(e) => setTripEndDate(e.target.value)} className="cute-input" />
+                      </div>
                     </div>
-                    <div>
-                      <p className="cute-label">End time</p>
-                      <input
-                        type="time"
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                        className="cute-input"
-                      />
-                    </div>
+                    <button
+                      onClick={createTrip}
+                      className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
+                      disabled={!name || !tripStartDate || !tripEndDate}
+                    >
+                      Create Trip
+                    </button>
                   </div>
+                )}
 
-                  <input
-                    placeholder="Location (optional)"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="cute-input"
-                  />
-
-                  <button
-                    onClick={createEvent}
-                    className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-                    disabled={
-                      !name ||
-                      !eventStartDate ||
-                      !eventEndDate ||
-                      !startTime ||
-                      !endTime
-                    }
-                  >
-                    Create Event
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Trip form */}
-            {createMode === "trip" && (
-              <>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-                    Plan a Trip ✨
-                  </p>
-                  <button className="mini-nav" onClick={() => setCreateMode("pick")}>
-                    ←
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <input
-                    placeholder="Trip name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="cute-input"
-                  />
-
-                  <div className="grid grid-cols-2 gap-3">
+                {createMode === "todo" && (
+                  <div className="space-y-3">
+                    <p className="text-lg font-extrabold">Add a Task ✨</p>
+                    <input placeholder="What do you need to do?" value={todoText} onChange={(e) => setTodoText(e.target.value)} className="cute-input" />
                     <div>
-                      <p className="cute-label">Start date</p>
-                      <input
-                        type="date"
-                        value={tripStartDate}
-                        onChange={(e) => setTripStartDate(e.target.value)}
-                        className="cute-input"
-                      />
+                      <p className="cute-label">Due date</p>
+                      <input type="date" value={todoDue} onChange={(e) => setTodoDue(e.target.value)} className="cute-input" />
                     </div>
-                    <div>
-                      <p className="cute-label">End date</p>
-                      <input
-                        type="date"
-                        value={tripEndDate}
-                        onChange={(e) => setTripEndDate(e.target.value)}
-                        className="cute-input"
-                      />
-                    </div>
+                    <button
+                      onClick={createGlobalTodo}
+                      className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
+                      disabled={!todoText || !todoDue}
+                    >
+                      Add TODO
+                    </button>
                   </div>
+                )}
 
-                  <button
-                    onClick={createTrip}
-                    className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-                    disabled={!name || !tripStartDate || !tripEndDate}
-                  >
-                    Create Trip
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Global TODO form */}
-            {createMode === "todo" && (
-              <>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-                    Add a Task ✨
-                  </p>
-                  <button className="mini-nav" onClick={() => setCreateMode("pick")}>
-                    ←
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <input
-                    placeholder="What do you need to do?"
-                    value={todoText}
-                    onChange={(e) => setTodoText(e.target.value)}
-                    className="cute-input"
-                  />
-
-                  <div>
-                    <p className="cute-label">Due date</p>
-                    <input
-                      type="date"
-                      value={todoDue}
-                      onChange={(e) => setTodoDue(e.target.value)}
-                      className="cute-input"
-                    />
+                {createMode === "wishlist" && (
+                  <div className="space-y-3">
+                    <p className="text-lg font-extrabold">Add a Someday Idea 💭</p>
+                    <input placeholder="Something you want to do someday…" value={wishText} onChange={(e) => setWishText(e.target.value)} className="cute-input" />
+                    <button
+                      onClick={createWishlistItem}
+                      className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
+                      disabled={!wishText}
+                    >
+                      Add to Wishlist
+                    </button>
                   </div>
-
-                  <button
-                    onClick={createGlobalTodo}
-                    className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-                    disabled={!todoText || !todoDue}
-                  >
-                    Add TODO
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Wishlist form */}
-            {createMode === "wishlist" && (
-              <>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-lg font-extrabold tracking-tight text-cute-ink">
-                    Add a Someday Idea 💭
-                  </p>
-                  <button className="mini-nav" onClick={() => setCreateMode("pick")}>
-                    ←
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <input
-                    placeholder="Something you want to do someday…"
-                    value={wishText}
-                    onChange={(e) => setWishText(e.target.value)}
-                    className="cute-input"
-                  />
-
-                  <button
-                    onClick={createWishlistItem}
-                    className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-                    disabled={!wishText}
-                  >
-                    Add to Wishlist
-                  </button>
-
-                  <p className="text-xs text-cute-muted">
-                    No deadline — just vibes ✨
-                  </p>
-                </div>
-              </>
+                )}
+              </div>
             )}
           </div>
         </div>
