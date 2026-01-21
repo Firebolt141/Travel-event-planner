@@ -10,6 +10,11 @@
 
   --sheet-bg: rgba(255, 255, 255, 0.92);
   --sheet-border: rgba(17, 24, 39, 0.10);
+
+  --nav-bg: rgba(255, 255, 255, 0.50);
+  --nav-border: rgba(255, 255, 255, 0.60);
+  --nav-btn-bg: rgba(255, 255, 255, 0.72);
+  --nav-btn-border: rgba(17, 24, 39, 0.10);
 }
 
 /* Calm Night mode (cozy dark, higher contrast) */
@@ -22,6 +27,11 @@ html[data-theme="night"] {
 
   --sheet-bg: rgba(16, 22, 38, 0.92);
   --sheet-border: rgba(255, 255, 255, 0.12);
+
+  --nav-bg: rgba(10, 15, 30, 0.68);
+  --nav-border: rgba(255, 255, 255, 0.10);
+  --nav-btn-bg: rgba(255, 255, 255, 0.08);
+  --nav-btn-border: rgba(255, 255, 255, 0.12);
 }
 
 body {
@@ -252,7 +262,7 @@ html[data-theme="night"] .cute-input {
   margin-bottom: 6px;
 }
 
-/* Modal sheet (fix unreadable text in night mode) */
+/* Modal sheet */
 .modal-sheet {
   background: var(--sheet-bg);
   border: 1px solid var(--sheet-border);
@@ -283,7 +293,7 @@ html[data-theme="night"] .pick-btn {
   transform: scale(0.99);
 }
 
-/* Login blobs: prettier in night mode */
+/* Login blobs */
 .login-blob {
   position: absolute;
   border-radius: 9999px;
@@ -322,18 +332,25 @@ html[data-theme="night"] .login-blob.blob3 {
   background: rgba(96, 165, 250, 0.16);
 }
 
+/* Bottom nav readability (fix) */
+.nav-cute {
+  background: var(--nav-bg);
+  border-top: 1px solid var(--nav-border);
+  backdrop-filter: blur(14px);
+}
+.nav-btn {
+  background: var(--nav-btn-bg);
+  border: 1px solid var(--nav-btn-border);
+  color: var(--cute-ink);
+}
+
 /* Animations */
 @keyframes cute-float {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-  100% { transform: translateY(0); }
-}
-@keyframes cute-blink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  94% { transform: scaleY(0.15); }
+  0% { transform: translateY(0); opacity: 0.95; }
+  50% { transform: translateY(-3px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0.95; }
 }
 .cute-float { animation: cute-float 3.5s ease-in-out infinite; }
-.buddy-blink { transform-origin: center; animation: cute-blink 4.5s ease-in-out infinite; }
 
 /* Confetti */
 @keyframes confetti-fall {
