@@ -364,15 +364,6 @@ export default function HomePage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (document.querySelector('script[src="https://tenor.com/embed.js"]')) return;
-    const script = document.createElement("script");
-    script.src = "https://tenor.com/embed.js";
-    script.async = true;
-    document.body.appendChild(script);
-  }, []);
-
   const weatherEmoji = (code: number, temp: number) => {
     if (code === 0) return "☀️";
     if (code === 1 || code === 2) return "🌤️";
@@ -832,15 +823,12 @@ export default function HomePage() {
                       weather.currentTemp
                     )}`}
                   >
-                    <div
-                      className="tenor-gif-embed"
-                      data-postid="25840732"
-                      data-share-method="host"
-                      data-aspect-ratio="1.06312"
-                      data-width="100%"
-                    >
-                      <a href="https://tenor.com/view/quby-run-gif-25840732">Quby Run Sticker</a>
-                    </div>
+                    <iframe
+                      src="https://tenor.com/embed/25840732"
+                      title="Quby running"
+                      loading="lazy"
+                      allow="autoplay; encrypted-media"
+                    />
                   </div>
                 </div>
               )}
