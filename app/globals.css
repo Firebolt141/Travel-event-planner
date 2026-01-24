@@ -191,23 +191,6 @@ html[data-theme="night"] .lang-toggle {
   box-shadow: 0 0 0 3px rgba(249, 168, 212, 0.25);
 }
 
-.kawaii-tag {
-  font-size: 10px;
-  font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 999px;
-  color: #7c3aed;
-  background: rgba(249, 168, 212, 0.25);
-  border: 1px solid rgba(124, 58, 237, 0.15);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-html[data-theme="night"] .kawaii-tag {
-  color: #f9a8d4;
-  background: rgba(244, 114, 182, 0.18);
-  border-color: rgba(244, 114, 182, 0.25);
-}
-
 .badge {
   display: inline-flex;
   align-items: center;

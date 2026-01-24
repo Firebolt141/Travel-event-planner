@@ -442,7 +442,6 @@ export default function HomePage() {
             </p>
             <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
               {strings.labels.planner} <PartyPopper className="opacity-80" size={22} />
-              <span className="kawaii-tag">{strings.labels.kawaii}</span>
             </h1>
             <p className="text-sm text-cute-muted mt-1">{todayAllDone ? strings.messages.nothingUrgent : headerMood}</p>
           </div>
