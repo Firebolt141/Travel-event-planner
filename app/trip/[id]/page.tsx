@@ -14,6 +14,7 @@ import {
   Sparkles,
   Plane,
   MapPin,
+  Languages,
   Moon,
   Sun,
 } from "lucide-react";
@@ -161,13 +162,11 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   /* ---------------- UI ---------------- */
 
   const isEvent = itemType === "event";
-  const nextLanguageLabel = language === "en" ? "日本語" : "EN";
-
   return (
     <div className="min-h-screen bg-cute text-cute-ink pb-28">
       {/* Header */}
       <header className="px-5 pt-6 pb-4">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex items-start gap-3">
             <button
               className="mini-nav"
@@ -193,19 +192,18 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className={`badge ${isEvent ? "badge-blue" : "badge-purple"}`}>
               {isEvent ? <Sparkles size={14} /> : <Plane size={14} />}
               {isEvent ? strings.labels.event : strings.labels.trip}
             </span>
             <button
-              className="lang-toggle"
+              className="mini-nav"
               onClick={toggleLanguage}
               aria-label={language === "en" ? strings.actions.switchToJapanese : strings.actions.switchToEnglish}
               title={language === "en" ? strings.actions.switchToJapanese : strings.actions.switchToEnglish}
             >
-              <span className="lang-dot" />
-              <span className="text-xs font-semibold">{nextLanguageLabel}</span>
+              <Languages size={18} />
             </button>
             <button
               className="mini-nav"

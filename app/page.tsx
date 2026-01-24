@@ -26,6 +26,7 @@ import {
   Plane,
   CheckSquare,
   Heart,
+  Languages,
   Moon,
   Sun,
 } from "lucide-react";
@@ -468,7 +469,6 @@ export default function HomePage() {
 
   const headerMood = dailyMood(todayStr, strings.moods);
   const season = seasonEmoji(today.getMonth());
-  const nextLanguageLabel = language === "en" ? "日本語" : "EN";
   const locale = strings.locale;
   const confettiSeed = stringSeed(todayStr);
   const countLabel = (count: number, type: CountType) =>
@@ -500,13 +500,12 @@ export default function HomePage() {
 
               <div className="flex items-center gap-2">
                 <button
-                  className="lang-toggle"
+                  className="mini-nav"
                   onClick={toggleLanguage}
                   aria-label={language === "en" ? strings.actions.switchToJapanese : strings.actions.switchToEnglish}
                   title={language === "en" ? strings.actions.switchToJapanese : strings.actions.switchToEnglish}
                 >
-                  <span className="lang-dot" />
-                  <span className="text-xs font-semibold">{nextLanguageLabel}</span>
+                  <Languages size={18} />
                 </button>
                 <button
                   className="mini-nav"
@@ -566,13 +565,12 @@ export default function HomePage() {
 
           <div className="flex items-center gap-2">
             <button
-              className="lang-toggle"
+              className="mini-nav"
               onClick={toggleLanguage}
               aria-label={language === "en" ? strings.actions.switchToJapanese : strings.actions.switchToEnglish}
               title={language === "en" ? strings.actions.switchToJapanese : strings.actions.switchToEnglish}
             >
-              <span className="lang-dot" />
-              <span className="text-xs font-semibold">{nextLanguageLabel}</span>
+              <Languages size={18} />
             </button>
 
             <button
