@@ -7,6 +7,7 @@ export const translations: Record<
     languageShort: string;
     labels: {
       planner: string;
+      appName: string;
       kawaii: string;
       tagline: string;
       calendar: string;
@@ -114,6 +115,7 @@ export const translations: Record<
     languageShort: "EN",
     labels: {
       planner: "Planner",
+      appName: "Asuka",
       kawaii: "kawaii",
       tagline: "Your little planner",
       calendar: "Calendar",
@@ -229,6 +231,7 @@ export const translations: Record<
     languageShort: "日本語",
     labels: {
       planner: "プランナー",
+      appName: "明日香",
       kawaii: "かわいい",
       tagline: "ちいさなプランナー",
       calendar: "カレンダー",

@@ -376,7 +376,7 @@ export default function HomePage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-cute-muted">{strings.messages.welcomeBack}</p>
-                <h1 className="text-4xl font-extrabold tracking-tight">Asuka ✨</h1>
+                <h1 className="text-4xl font-extrabold tracking-tight">{strings.labels.appName} ✨</h1>
                 <p className="text-sm text-cute-muted mt-1">{strings.messages.subtitle}</p>
               </div>
 
