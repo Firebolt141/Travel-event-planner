@@ -93,6 +93,13 @@ type GlobalTodoWithSource = GlobalTodo & {
 };
 type CombinedTodo = TripTodoWithSource | GlobalTodoWithSource;
 type CountType = "total" | "items" | "tasks" | "people";
+type WeatherState = {
+  currentTemp: number;
+  minTemp: number;
+  maxTemp: number;
+  weatherCode: number;
+  updatedAt: string;
+};
 
 /* ---------------- DELIGHT HELPERS ---------------- */
 function seasonEmoji(monthIndex0: number) {
@@ -189,6 +196,9 @@ export default function HomePage() {
 
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimer = useRef<number | null>(null);
+  const [weather, setWeather] = useState<WeatherState | null>(null);
+  const [weatherError, setWeatherError] = useState(false);
+  const [weatherLoading, setWeatherLoading] = useState(false);
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
@@ -310,6 +320,63 @@ export default function HomePage() {
     confettiTimer.current = window.setTimeout(() => setShowConfetti(false), 1200);
     return () => window.clearTimeout(showTimer);
   }, [todayAllDone, todayStr]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchWeather = async () => {
+      setWeatherLoading(true);
+      setWeatherError(false);
+      try {
+        const response = await fetch(
+          "https://api.open-meteo.com/v1/forecast?latitude=35.7068&longitude=139.6967&current=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Asia%2FTokyo&forecast_days=1"
+        );
+        if (!response.ok) throw new Error("weather failed");
+        const data = await response.json();
+        if (!isMounted) return;
+        const currentTemp = data?.current?.temperature_2m;
+        const weatherCode = data?.current?.weathercode;
+        const minTemp = data?.daily?.temperature_2m_min?.[0];
+        const maxTemp = data?.daily?.temperature_2m_max?.[0];
+        const updatedAt = data?.current?.time;
+        if ([currentTemp, weatherCode, minTemp, maxTemp, updatedAt].some((v) => v === undefined)) {
+          throw new Error("weather missing");
+        }
+        setWeather({
+          currentTemp,
+          minTemp,
+          maxTemp,
+          weatherCode,
+          updatedAt,
+        });
+      } catch {
+        if (isMounted) {
+          setWeatherError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setWeatherLoading(false);
+        }
+      }
+    };
+    fetchWeather();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const weatherEmoji = (code: number, temp: number) => {
+    if (code === 0) return "☀️";
+    if (code === 1 || code === 2) return "🌤️";
+    if (code === 3) return "☁️";
+    if (code >= 45 && code <= 48) return "🌫️";
+    if (code >= 51 && code <= 67) return "🌧️";
+    if (code >= 71 && code <= 77) return "☃️";
+    if (code >= 80 && code <= 82) return "🌦️";
+    if (code >= 85 && code <= 86) return "⛄";
+    if (code >= 95) return "⛈️";
+    if (temp <= 5) return "⛄";
+    return "🌈";
+  };
 
   function resetModalInputs() {
     setName("");
@@ -610,111 +677,145 @@ export default function HomePage() {
           </div>
 
           {/* Details */}
-          <div className="card-cute">
-            <div className="flex items-center justify-between mb-2">
-              <span className="badge badge-sun">
-                <List size={14} />
-                {strings.labels.details}
-              </span>
-              <span className="pill">
-                <span className="text-xs text-cute-muted">{strings.labels.selected}</span>
-                <span className="text-sm font-semibold">{selectedDate}</span>
-              </span>
-            </div>
+          <div className="space-y-4">
+            <div className="card-cute">
+              <div className="flex items-center justify-between mb-2">
+                <span className="badge badge-sun">
+                  <List size={14} />
+                  {strings.labels.details}
+                </span>
+                <span className="pill">
+                  <span className="text-xs text-cute-muted">{strings.labels.selected}</span>
+                  <span className="text-sm font-semibold">{selectedDate}</span>
+                </span>
+              </div>
 
-            <div className="mt-3">
-              <p className="text-xs text-cute-muted mb-2">{strings.labels.eventsTrips}</p>
+              <div className="mt-3">
+                <p className="text-xs text-cute-muted mb-2">{strings.labels.eventsTrips}</p>
 
-              {events.filter((e) => e.startDate === selectedDate).map((event) => (
-                <div
-                  key={event.id}
-                  onMouseEnter={() => prefetchEvent(event.id)}
-                  onTouchStart={() => prefetchEvent(event.id)}
-                  onClick={() => goEvent(event.id)}
-                  className="detail-pill detail-blue"
-                  role="button"
-                  tabIndex={0}
-                >
-                  <p className="font-semibold">{event.name}</p>
-                  <p className="text-xs opacity-80">
-                    {event.startTime} → {event.endTime}
-                    {event.location ? ` • ${event.location}` : ""}
-                  </p>
-                </div>
-              ))}
-
-              {trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate)).map((trip) => (
-                <div
-                  key={trip.id}
-                  onMouseEnter={() => prefetchTrip(trip.id)}
-                  onTouchStart={() => prefetchTrip(trip.id)}
-                  onClick={() => goTrip(trip.id)}
-                  className="detail-pill detail-purple"
-                  role="button"
-                  tabIndex={0}
-                >
-                  <p className="font-semibold">{trip.name}</p>
-                  <p className="text-xs opacity-80">
-                    {trip.startDate} → {trip.endDate}
-                  </p>
-                </div>
-              ))}
-
-              {events.filter((e) => e.startDate === selectedDate).length === 0 &&
-                trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate)).length === 0 && (
-                  <p className="text-sm text-cute-muted mt-2">{strings.messages.noPlanned}</p>
-                )}
-            </div>
-
-            <div className="mt-5">
-              <p className="text-xs text-cute-muted mb-2">{strings.labels.todoDeadlines}</p>
-
-              {todosForDateCombined.map((todo, i) => {
-                const isGlobal = todo.source === "global";
-                return (
+                {events.filter((e) => e.startDate === selectedDate).map((event) => (
                   <div
-                    key={
-                      todo.source === "global"
-                        ? `${todo.source}-${todo.id}-${todo.text}-${i}`
-                        : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
-                    }
-                    onMouseEnter={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
-                    onTouchStart={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
-                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : goTrip(todo.tripId))}
-                    className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
+                    key={event.id}
+                    onMouseEnter={() => prefetchEvent(event.id)}
+                    onTouchStart={() => prefetchEvent(event.id)}
+                    onClick={() => goEvent(event.id)}
+                    className="detail-pill detail-blue"
                     role="button"
                     tabIndex={0}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className={`font-semibold ${todo.done ? "line-through opacity-80" : ""}`}>{todo.text}</p>
-                        <p className="text-xs opacity-80">
-                          {isGlobal
-                            ? `${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}`
-                            : `${todo.tripName} • ${strings.labels.pic}: ${todo.pic}`}
+                    <p className="font-semibold">{event.name}</p>
+                    <p className="text-xs opacity-80">
+                      {event.startTime} → {event.endTime}
+                      {event.location ? ` • ${event.location}` : ""}
+                    </p>
+                  </div>
+                ))}
+
+                {trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate)).map((trip) => (
+                  <div
+                    key={trip.id}
+                    onMouseEnter={() => prefetchTrip(trip.id)}
+                    onTouchStart={() => prefetchTrip(trip.id)}
+                    onClick={() => goTrip(trip.id)}
+                    className="detail-pill detail-purple"
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <p className="font-semibold">{trip.name}</p>
+                    <p className="text-xs opacity-80">
+                      {trip.startDate} → {trip.endDate}
+                    </p>
+                  </div>
+                ))}
+
+                {events.filter((e) => e.startDate === selectedDate).length === 0 &&
+                  trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate)).length === 0 && (
+                    <p className="text-sm text-cute-muted mt-2">{strings.messages.noPlanned}</p>
+                  )}
+              </div>
+
+              <div className="mt-5">
+                <p className="text-xs text-cute-muted mb-2">{strings.labels.todoDeadlines}</p>
+
+                {todosForDateCombined.map((todo, i) => {
+                  const isGlobal = todo.source === "global";
+                  return (
+                    <div
+                      key={
+                        todo.source === "global"
+                          ? `${todo.source}-${todo.id}-${todo.text}-${i}`
+                          : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
+                      }
+                      onMouseEnter={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
+                      onTouchStart={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
+                      onClick={() => (isGlobal ? toggleGlobalTodo(todo) : goTrip(todo.tripId))}
+                      className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className={`font-semibold ${todo.done ? "line-through opacity-80" : ""}`}>{todo.text}</p>
+                          <p className="text-xs opacity-80">
+                            {isGlobal
+                              ? `${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}`
+                              : `${todo.tripName} • ${strings.labels.pic}: ${todo.pic}`}
+                          </p>
+                        </div>
+
+                        {isGlobal ? (
+                          <button
+                            className="icon-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteGlobalTodo(todo);
+                            }}
+                            aria-label={strings.actions.deleteTodo}
+                            title={strings.actions.deleteTodo}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {todosForDateCombined.length === 0 && (
+                  <p className="text-sm text-cute-muted mt-2">{strings.messages.noDeadlines}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="card-cute">
+              <div className="flex items-center justify-between">
+                <span className="badge badge-sun">{strings.labels.weatherNow}</span>
+                <span className="text-xs text-cute-muted">{strings.labels.weatherLocation}</span>
+              </div>
+
+              {weatherLoading ? (
+                <p className="text-sm text-cute-muted mt-3">{strings.messages.weatherLoading}</p>
+              ) : weatherError || !weather ? (
+                <p className="text-sm text-cute-muted mt-3">{strings.messages.weatherError}</p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="weather-emoji">{weatherEmoji(weather.weatherCode, weather.currentTemp)}</span>
+                      <div>
+                        <p className="font-semibold">
+                          {strings.labels.weatherCurrent}: {Math.round(weather.currentTemp)}°C
+                        </p>
+                        <p className="text-xs text-cute-muted">
+                          {strings.labels.weatherMin}: {Math.round(weather.minTemp)}°C • {strings.labels.weatherMax}: {Math.round(weather.maxTemp)}°C
                         </p>
                       </div>
-
-                      {isGlobal ? (
-                        <button
-                          className="icon-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteGlobalTodo(todo);
-                          }}
-                          aria-label={strings.actions.deleteTodo}
-                          title={strings.actions.deleteTodo}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      ) : null}
                     </div>
+                    <span className="text-xs text-cute-muted">
+                      {strings.labels.weatherUpdated} {new Date(weather.updatedAt).toLocaleTimeString(strings.locale, { hour: "2-digit", minute: "2-digit" })}
+                    </span>
                   </div>
-                );
-              })}
-
-              {todosForDateCombined.length === 0 && (
-                <p className="text-sm text-cute-muted mt-2">{strings.messages.noDeadlines}</p>
+                </div>
               )}
             </div>
           </div>
