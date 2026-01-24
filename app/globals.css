@@ -34,13 +34,7 @@ html[data-theme="night"] {
   --nav-btn-border: rgba(255, 255, 255, 0.12);
 }
 
-/* =============== IMPORTANT: DISABLE NATIVE PULL-TO-REFRESH (where supported) =============== */
-/* This prevents Chrome/Android/WebView pull-to-refresh indicator overlays.
-   iOS Safari may still show native behavior (Apple doesn't fully support this control). */
-html,
-body {
-  overscroll-behavior-y: none;
-}
+/* =============== Pull-to-refresh enabled =============== */
 
 body {
   background: linear-gradient(135deg, var(--cute-bg1), var(--cute-bg2));
