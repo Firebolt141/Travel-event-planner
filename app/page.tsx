@@ -364,6 +364,15 @@ export default function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (document.querySelector('script[src="https://tenor.com/embed.js"]')) return;
+    const script = document.createElement("script");
+    script.src = "https://tenor.com/embed.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
   const weatherEmoji = (code: number, temp: number) => {
     if (code === 0) return "☀️";
     if (code === 1 || code === 2) return "🌤️";
@@ -378,17 +387,11 @@ export default function HomePage() {
     return "🌈";
   };
 
-  const weatherGif = (code: number, temp: number) => {
-    if (temp <= 5 || (code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
-      return "https://media.tenor.com/9dT-wU3uIBQAAAAC/running-snow.gif";
-    }
-    if (code >= 51 && code <= 67) {
-      return "https://media.tenor.com/x5JXgDyaK9QAAAAC/running-in-rain-girl.gif";
-    }
-    if (code >= 80 && code <= 82) {
-      return "https://media.tenor.com/2aH0-48l0_8AAAAC/running-in-rain.gif";
-    }
-    return "https://media.tenor.com/7zRReyT1G_gAAAAC/running-girl.gif";
+  const weatherRunnerVariant = (code: number, temp: number) => {
+    if (temp <= 5 || (code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return "snow";
+    if (code >= 51 && code <= 67) return "rain";
+    if (code >= 80 && code <= 82) return "rain";
+    return "sun";
   };
 
   function resetModalInputs() {
@@ -822,12 +825,23 @@ export default function HomePage() {
                       </p>
                     </div>
                   </div>
-                  <img
-                    src={weatherGif(weather.weatherCode, weather.currentTemp)}
-                    alt="Animated runner for weather"
-                    className="weather-gif"
-                    loading="lazy"
-                  />
+                  <div
+                    key={weatherRunnerVariant(weather.weatherCode, weather.currentTemp)}
+                    className={`weather-runner weather-runner--${weatherRunnerVariant(
+                      weather.weatherCode,
+                      weather.currentTemp
+                    )}`}
+                  >
+                    <div
+                      className="tenor-gif-embed"
+                      data-postid="25840732"
+                      data-share-method="host"
+                      data-aspect-ratio="1.06312"
+                      data-width="100%"
+                    >
+                      <a href="https://tenor.com/view/quby-run-gif-25840732">Quby Run Sticker</a>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
