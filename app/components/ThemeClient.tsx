@@ -18,15 +18,11 @@ function applyThemeToHtml(theme: ThemeMode) {
 }
 
 export default function ThemeClient({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>("day");
-
-  // init
-  useEffect(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("asukaTheme") : null;
-    const initial: ThemeMode = saved === "night" ? "night" : "day";
-    setThemeState(initial);
-    applyThemeToHtml(initial);
-  }, []);
+  const [theme, setThemeState] = useState<ThemeMode>(() => {
+    if (typeof window === "undefined") return "day";
+    const saved = localStorage.getItem("asukaTheme");
+    return saved === "night" ? "night" : "day";
+  });
 
   // persist + apply
   useEffect(() => {
