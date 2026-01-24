@@ -380,15 +380,15 @@ export default function HomePage() {
 
   const weatherGif = (code: number, temp: number) => {
     if (temp <= 5 || (code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
-      return "https://media.giphy.com/media/3o6ZtpxSZbQRRnwCKQ/giphy.gif";
+      return "https://media.tenor.com/9dT-wU3uIBQAAAAC/running-snow.gif";
     }
     if (code >= 51 && code <= 67) {
-      return "https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif";
+      return "https://media.tenor.com/x5JXgDyaK9QAAAAC/running-in-rain-girl.gif";
     }
     if (code >= 80 && code <= 82) {
-      return "https://media.giphy.com/media/13FrpeVH09Zrb2/giphy.gif";
+      return "https://media.tenor.com/2aH0-48l0_8AAAAC/running-in-rain.gif";
     }
-    return "https://media.giphy.com/media/26uf9QPzzlKPvQG5O/giphy.gif";
+    return "https://media.tenor.com/7zRReyT1G_gAAAAC/running-girl.gif";
   };
 
   function resetModalInputs() {
@@ -824,7 +824,7 @@ export default function HomePage() {
                   </div>
                   <img
                     src={weatherGif(weather.weatherCode, weather.currentTemp)}
-                    alt="Running weather"
+                    alt="Animated runner for weather"
                     className="weather-gif"
                     loading="lazy"
                   />
