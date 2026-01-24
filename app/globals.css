@@ -165,6 +165,49 @@ html[data-theme="night"] .mini-nav {
   transform: scale(0.98);
 }
 
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 24, 39, 0.10);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(253, 230, 255, 0.85));
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+  transition: transform 140ms ease, opacity 140ms ease;
+}
+html[data-theme="night"] .lang-toggle {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(244, 114, 182, 0.18));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.lang-toggle:active {
+  transform: scale(0.98);
+}
+.lang-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: radial-gradient(circle at top, #f9a8d4, #a78bfa);
+  box-shadow: 0 0 0 3px rgba(249, 168, 212, 0.25);
+}
+
+.kawaii-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #7c3aed;
+  background: rgba(249, 168, 212, 0.25);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+html[data-theme="night"] .kawaii-tag {
+  color: #f9a8d4;
+  background: rgba(244, 114, 182, 0.18);
+  border-color: rgba(244, 114, 182, 0.25);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -268,6 +311,39 @@ html[data-theme="night"] .cute-input {
   font-size: 12px;
   color: var(--cute-muted);
   margin-bottom: 6px;
+}
+
+.cute-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  border: 1px dashed rgba(124, 58, 237, 0.25);
+  background: rgba(255, 255, 255, 0.6);
+}
+html[data-theme="night"] .cute-radio-group {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(244, 114, 182, 0.25);
+}
+.cute-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  background: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  color: var(--cute-ink);
+}
+html[data-theme="night"] .cute-radio {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.cute-radio input {
+  accent-color: var(--cute-accent);
 }
 
 /* Modal sheet */
