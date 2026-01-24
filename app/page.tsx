@@ -378,6 +378,19 @@ export default function HomePage() {
     return "🌈";
   };
 
+  const weatherGif = (code: number, temp: number) => {
+    if (temp <= 5 || (code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
+      return "https://media.giphy.com/media/3o6ZtpxSZbQRRnwCKQ/giphy.gif";
+    }
+    if (code >= 51 && code <= 67) {
+      return "https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif";
+    }
+    if (code >= 80 && code <= 82) {
+      return "https://media.giphy.com/media/13FrpeVH09Zrb2/giphy.gif";
+    }
+    return "https://media.giphy.com/media/26uf9QPzzlKPvQG5O/giphy.gif";
+  };
+
   function resetModalInputs() {
     setName("");
     setTripStartDate("");
@@ -790,7 +803,6 @@ export default function HomePage() {
             <div className="card-cute">
               <div className="flex items-center justify-between">
                 <span className="badge badge-sun">{strings.labels.weatherNow}</span>
-                <span className="text-xs text-cute-muted">{strings.labels.weatherLocation}</span>
               </div>
 
               {weatherLoading ? (
@@ -798,23 +810,24 @@ export default function HomePage() {
               ) : weatherError || !weather ? (
                 <p className="text-sm text-cute-muted mt-3">{strings.messages.weatherError}</p>
               ) : (
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="weather-emoji">{weatherEmoji(weather.weatherCode, weather.currentTemp)}</span>
-                      <div>
-                        <p className="font-semibold">
-                          {strings.labels.weatherCurrent}: {Math.round(weather.currentTemp)}°C
-                        </p>
-                        <p className="text-xs text-cute-muted">
-                          {strings.labels.weatherMin}: {Math.round(weather.minTemp)}°C • {strings.labels.weatherMax}: {Math.round(weather.maxTemp)}°C
-                        </p>
-                      </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="weather-emoji">{weatherEmoji(weather.weatherCode, weather.currentTemp)}</span>
+                    <div>
+                      <p className="font-semibold">
+                        {strings.labels.weatherCurrent}: {Math.round(weather.currentTemp)}°C
+                      </p>
+                      <p className="text-xs text-cute-muted">
+                        {strings.labels.weatherMin}: {Math.round(weather.minTemp)}°C • {strings.labels.weatherMax}: {Math.round(weather.maxTemp)}°C
+                      </p>
                     </div>
-                    <span className="text-xs text-cute-muted">
-                      {strings.labels.weatherUpdated} {new Date(weather.updatedAt).toLocaleTimeString(strings.locale, { hour: "2-digit", minute: "2-digit" })}
-                    </span>
                   </div>
+                  <img
+                    src={weatherGif(weather.weatherCode, weather.currentTemp)}
+                    alt="Running weather"
+                    className="weather-gif"
+                    loading="lazy"
+                  />
                 </div>
               )}
             </div>

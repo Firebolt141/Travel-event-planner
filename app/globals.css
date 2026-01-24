@@ -333,6 +333,13 @@ html[data-theme="night"] .cute-radio {
   font-size: 26px;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.12));
 }
+.weather-gif {
+  width: 86px;
+  height: 86px;
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+}
 
 /* Modal sheet */
 .modal-sheet {
