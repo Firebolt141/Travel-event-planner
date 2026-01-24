@@ -1,4 +1,10 @@
+"use client";
+
+import { useLanguage } from "@/app/components/useLanguage";
+
 export default function LoadingEvent() {
+  const { strings } = useLanguage();
+
   return (
     <div className="min-h-screen bg-cute text-cute-ink flex items-center justify-center px-5">
       <div className="card-cute w-full max-w-md flex flex-col items-center justify-center py-10">
@@ -18,7 +24,7 @@ export default function LoadingEvent() {
         />
 
         <p className="mt-4 text-sm font-semibold text-cute-muted">
-          Waking the plans… <span className="font-extrabold">zZz</span>
+          {strings.messages.wakingPlans} <span className="font-extrabold">zZz</span>
         </p>
       </div>
     </div>
