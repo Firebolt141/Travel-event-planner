@@ -64,6 +64,12 @@ export const translations: Record<
       task: string;
       assignPic: string;
       addParticipant: string;
+      weatherNow: string;
+      weatherLocation: string;
+      weatherCurrent: string;
+      weatherMin: string;
+      weatherMax: string;
+      weatherUpdated: string;
     };
     messages: {
       welcomeBack: string;
@@ -88,6 +94,8 @@ export const translations: Record<
       tipSave: string;
       eventDetails: string;
       tripDetails: string;
+      weatherLoading: string;
+      weatherError: string;
     };
     actions: {
       seeYouLater: string;
@@ -171,6 +179,12 @@ export const translations: Record<
       task: "Task",
       assignPic: "Assign PIC",
       addParticipant: "Add Participant",
+      weatherNow: "Weather now",
+      weatherLocation: "Nishi-Waseda",
+      weatherCurrent: "Current",
+      weatherMin: "Min",
+      weatherMax: "Max",
+      weatherUpdated: "Updated",
     },
     messages: {
       welcomeBack: "Welcome back",
@@ -195,6 +209,8 @@ export const translations: Record<
       tipSave: "Tip: Click outside the box to save.",
       eventDetails: "Event details",
       tripDetails: "Trip details",
+      weatherLoading: "Fetching live weather…",
+      weatherError: "Weather unavailable right now.",
     },
     actions: {
       seeYouLater: "See you later",
@@ -286,6 +302,12 @@ export const translations: Record<
       task: "タスク",
       assignPic: "担当者を選択",
       addParticipant: "参加者を追加",
+      weatherNow: "今の天気",
+      weatherLocation: "西早稲田",
+      weatherCurrent: "現在",
+      weatherMin: "最低",
+      weatherMax: "最高",
+      weatherUpdated: "更新",
     },
     messages: {
       welcomeBack: "おかえりなさい",
@@ -310,6 +332,8 @@ export const translations: Record<
       tipSave: "ヒント：外側をクリックすると保存。",
       eventDetails: "イベント詳細",
       tripDetails: "旅行詳細",
+      weatherLoading: "天気を取得中…",
+      weatherError: "天気を取得できません。",
     },
     actions: {
       seeYouLater: "またね",

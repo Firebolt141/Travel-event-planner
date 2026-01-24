@@ -6,15 +6,11 @@ import { Language, translations } from "@/lib/translations";
 const storageKey = "asuka_lang";
 
 export function useLanguage() {
-  const [language, setLanguage] = useState<Language>("en");
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window === "undefined") return "en";
     const stored = window.localStorage.getItem(storageKey);
-    if (stored === "en" || stored === "ja") {
-      setLanguage(stored);
-    }
-  }, []);
+    return stored === "ja" || stored === "en" ? stored : "en";
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;

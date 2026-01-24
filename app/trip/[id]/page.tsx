@@ -14,8 +14,11 @@ import {
   Sparkles,
   Plane,
   MapPin,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useLanguage } from "@/app/components/useLanguage";
+import { useTheme } from "@/app/components/ThemeClient";
 
 /* ---------------- TYPES ---------------- */
 
@@ -30,6 +33,16 @@ type Todo = {
   dueDate: string;
 };
 type CountType = "tasks" | "people";
+type ItemData = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  location?: string;
+  description?: string;
+  participants?: Participant[];
+  todos?: Todo[];
+};
 
 /* ---------------- PAGE ---------------- */
 
@@ -38,11 +51,12 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   const router = useRouter();
   const id = params.id as string;
   const itemType = type || "trip";
-  const { strings, language } = useLanguage();
+  const { strings, language, toggleLanguage } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const countLabel = (count: number, type: CountType) =>
     language === "ja" ? `${count}${strings.labels[type]}` : `${count} ${strings.labels[type]}`;
 
-  const [item, setItem] = useState<any>(null);
+  const [item, setItem] = useState<ItemData | null>(null);
   const [description, setDescription] = useState("");
 
   // Participant input
@@ -66,12 +80,14 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
     const unsub = onSnapshot(doc(db, collectionName, id), (snap) => {
       const data = snap.data();
       if (!data) return;
-      setItem({ id: snap.id, ...data });
-      setDescription(data.description || "");
+      const payload = { id: snap.id, ...(data as Omit<ItemData, "id">) };
+      setItem(payload);
+      setDescription(payload.description || "");
     });
 
     return () => unsub();
   }, [id, collectionName]);
+
 
   if (!item) {
     return (
@@ -145,6 +161,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   /* ---------------- UI ---------------- */
 
   const isEvent = itemType === "event";
+  const nextLanguageLabel = language === "en" ? "日本語" : "EN";
 
   return (
     <div className="min-h-screen bg-cute text-cute-ink pb-28">
@@ -176,10 +193,29 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
             </div>
           </div>
 
-          <span className={`badge ${isEvent ? "badge-blue" : "badge-purple"}`}>
-            {isEvent ? <Sparkles size={14} /> : <Plane size={14} />}
-            {isEvent ? strings.labels.event : strings.labels.trip}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`badge ${isEvent ? "badge-blue" : "badge-purple"}`}>
+              {isEvent ? <Sparkles size={14} /> : <Plane size={14} />}
+              {isEvent ? strings.labels.event : strings.labels.trip}
+            </span>
+            <button
+              className="lang-toggle"
+              onClick={toggleLanguage}
+              aria-label={language === "en" ? strings.actions.switchToJapanese : strings.actions.switchToEnglish}
+              title={language === "en" ? strings.actions.switchToJapanese : strings.actions.switchToEnglish}
+            >
+              <span className="lang-dot" />
+              <span className="text-xs font-semibold">{nextLanguageLabel}</span>
+            </button>
+            <button
+              className="mini-nav"
+              onClick={toggleTheme}
+              aria-label={strings.actions.toggleTheme}
+              title={strings.actions.toggleTheme}
+            >
+              {theme === "day" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </div>
         </div>
       </header>
 
