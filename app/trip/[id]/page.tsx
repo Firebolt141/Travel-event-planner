@@ -14,7 +14,12 @@ import {
   Sparkles,
   Plane,
   MapPin,
+  Languages,
+  Moon,
+  Sun,
 } from "lucide-react";
+import { useLanguage } from "@/app/components/useLanguage";
+import { useTheme } from "@/app/components/ThemeClient";
 
 /* ---------------- TYPES ---------------- */
 
@@ -28,6 +33,17 @@ type Todo = {
   done: boolean;
   dueDate: string;
 };
+type CountType = "tasks" | "people";
+type ItemData = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  location?: string;
+  description?: string;
+  participants?: Participant[];
+  todos?: Todo[];
+};
 
 /* ---------------- PAGE ---------------- */
 
@@ -36,8 +52,12 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   const router = useRouter();
   const id = params.id as string;
   const itemType = type || "trip";
+  const { strings, language, toggleLanguage } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
+  const countLabel = (count: number, type: CountType) =>
+    language === "ja" ? `${count}${strings.labels[type]}` : `${count} ${strings.labels[type]}`;
 
-  const [item, setItem] = useState<any>(null);
+  const [item, setItem] = useState<ItemData | null>(null);
   const [description, setDescription] = useState("");
 
   // Participant input
@@ -61,12 +81,14 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
     const unsub = onSnapshot(doc(db, collectionName, id), (snap) => {
       const data = snap.data();
       if (!data) return;
-      setItem({ id: snap.id, ...data });
-      setDescription(data.description || "");
+      const payload = { id: snap.id, ...(data as Omit<ItemData, "id">) };
+      setItem(payload);
+      setDescription(payload.description || "");
     });
 
     return () => unsub();
   }, [id, collectionName]);
+
 
   if (!item) {
     return (
@@ -75,7 +97,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
           <div className="mx-auto mb-3 w-14 h-14 rounded-3xl bg-white/70 shadow-cute flex items-center justify-center">
             <Sparkles />
           </div>
-          <p className="text-sm text-cute-muted">Loading…</p>
+          <p className="text-sm text-cute-muted">{strings.messages.loading}</p>
         </div>
       </div>
     );
@@ -140,20 +162,24 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   /* ---------------- UI ---------------- */
 
   const isEvent = itemType === "event";
-
   return (
     <div className="min-h-screen bg-cute text-cute-ink pb-28">
       {/* Header */}
       <header className="px-5 pt-6 pb-4">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex items-start gap-3">
-            <button className="mini-nav" onClick={() => router.push("/")} aria-label="Back">
+            <button
+              className="mini-nav"
+              onClick={() => router.push("/")}
+              aria-label={strings.actions.back}
+              title={strings.actions.back}
+            >
               <ArrowLeft size={18} />
             </button>
 
             <div>
               <p className="text-xs text-cute-muted">
-                {isEvent ? "Event details" : "Trip details"}
+                {isEvent ? strings.messages.eventDetails : strings.messages.tripDetails}
               </p>
               <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
                 {item.name}
@@ -166,10 +192,28 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
             </div>
           </div>
 
-          <span className={`badge ${isEvent ? "badge-blue" : "badge-purple"}`}>
-            {isEvent ? <Sparkles size={14} /> : <Plane size={14} />}
-            {isEvent ? "Event" : "Trip"}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className={`badge ${isEvent ? "badge-blue" : "badge-purple"}`}>
+              {isEvent ? <Sparkles size={14} /> : <Plane size={14} />}
+              {isEvent ? strings.labels.event : strings.labels.trip}
+            </span>
+            <button
+              className="mini-nav"
+              onClick={toggleLanguage}
+              aria-label={language === "en" ? strings.actions.switchToJapanese : strings.actions.switchToEnglish}
+              title={language === "en" ? strings.actions.switchToJapanese : strings.actions.switchToEnglish}
+            >
+              <Languages size={18} />
+            </button>
+            <button
+              className="mini-nav"
+              onClick={toggleTheme}
+              aria-label={strings.actions.toggleTheme}
+              title={strings.actions.toggleTheme}
+            >
+              {theme === "day" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -179,7 +223,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
           <div className="flex items-center justify-between">
             <span className="badge badge-mint">
               <CalendarDays size={14} />
-              Dates
+              {strings.labels.dates}
             </span>
           </div>
 
@@ -198,18 +242,18 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
 
         {/* Description */}
         <div className="card-cute mb-4">
-          <p className="text-xs text-cute-muted mb-2">Description</p>
+          <p className="text-xs text-cute-muted mb-2">{strings.labels.description}</p>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onBlur={async () => {
               await updateDoc(doc(db, collectionName, id), { description });
             }}
-            placeholder="Add description…"
+            placeholder={strings.labels.descriptionPlaceholder}
             className="cute-input min-h-[100px] resize-none"
           />
           <p className="text-xs text-cute-muted mt-2">
-            Tip: Click outside the box to save.
+            {strings.messages.tipSave}
           </p>
         </div>
 
@@ -218,10 +262,10 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
           <div className="flex items-center justify-between mb-3">
             <span className="badge badge-sun">
               <Users size={14} />
-              Participants
+              {strings.labels.participants}
             </span>
             <span className="text-xs text-cute-muted">
-              {(item.participants || []).length} people
+              {countLabel((item.participants || []).length, "people")}
             </span>
           </div>
 
@@ -232,8 +276,8 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
                 <button
                   className="icon-btn"
                   onClick={() => deleteParticipant(p)}
-                  aria-label="Remove participant"
-                  title="Remove"
+                  aria-label={strings.actions.removeParticipant}
+                  title={strings.actions.removeParticipant}
                 >
                   <Trash2 size={18} />
                 </button>
@@ -241,12 +285,12 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
             ))}
 
             {(item.participants || []).length === 0 && (
-              <p className="text-sm text-cute-muted">No participants yet</p>
+              <p className="text-sm text-cute-muted">{strings.messages.noParticipants}</p>
             )}
           </div>
 
           <input
-            placeholder="Name"
+            placeholder={strings.labels.name}
             value={pName}
             onChange={(e) => setPName(e.target.value)}
             className="cute-input mb-3"
@@ -257,7 +301,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
             className="w-full py-3 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
             disabled={!pName}
           >
-            Add Participant
+            {strings.labels.addParticipant}
           </button>
         </div>
 
@@ -266,10 +310,10 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
           <div className="flex items-center justify-between mb-3">
             <span className="badge badge-pink">
               <Circle size={14} />
-              TODOs
+              {strings.labels.todos}
             </span>
             <span className="text-xs text-cute-muted">
-              {(item.todos || []).length} tasks
+              {countLabel((item.todos || []).length, "tasks")}
             </span>
           </div>
 
@@ -297,7 +341,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
                       {todo.text}
                     </p>
                     <p className="text-xs text-cute-muted mt-1">
-                      PIC: {todo.pic} • Due: {todo.dueDate}
+                      {strings.labels.pic}: {todo.pic} • {strings.labels.due}: {todo.dueDate}
                     </p>
                   </div>
                 </div>
@@ -305,8 +349,8 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
                 <button
                   className="icon-btn"
                   onClick={() => deleteTodo(todo)}
-                  aria-label="Delete todo"
-                  title="Delete"
+                  aria-label={strings.actions.deleteTodo}
+                  title={strings.actions.deleteTodo}
                 >
                   <Trash2 size={18} />
                 </button>
@@ -314,12 +358,12 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
             ))}
 
             {(item.todos || []).length === 0 && (
-              <p className="text-sm text-cute-muted">No TODOs yet</p>
+              <p className="text-sm text-cute-muted">{strings.messages.noTripTodos}</p>
             )}
           </div>
 
           <input
-            placeholder="Task"
+            placeholder={strings.labels.task}
             value={todoText}
             onChange={(e) => setTodoText(e.target.value)}
             className="cute-input mb-2"
@@ -331,7 +375,7 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
             disabled={(item.participants || []).length === 0}
             className="cute-input mb-2"
           >
-            <option value="">Assign PIC</option>
+            <option value="">{strings.labels.assignPic}</option>
             {(item.participants || []).map((p: Participant, i: number) => (
               <option key={i} value={p.name}>
                 {p.name}
@@ -351,12 +395,12 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
             className="w-full py-3 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
             disabled={!todoText || !todoPic || !todoDue}
           >
-            Add TODO
+            {strings.labels.addTodo}
           </button>
 
           {(item.participants || []).length === 0 && (
             <p className="text-xs text-cute-muted mt-2">
-              Add at least 1 participant to assign PIC.
+              {strings.messages.addAtLeastOneParticipant}
             </p>
           )}
         </div>
