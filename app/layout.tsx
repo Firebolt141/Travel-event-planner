@@ -4,7 +4,7 @@ import ThemeClient from "./components/ThemeClient";
 
 // If you already have metadata/icons/manifest here, copy-paste those back in.
 export const metadata: Metadata = {
-  title: "Asuka Planner",
+  title: "Meet Asuka",
   description: "Events • Trips • TODOs • Wishlist",
 };
 
