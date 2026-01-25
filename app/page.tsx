@@ -9,6 +9,8 @@ import {
   deleteDoc,
   doc,
   updateDoc,
+  arrayRemove,
+  arrayUnion,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import {
@@ -198,11 +200,13 @@ export default function HomePage() {
 
   const [wishText, setWishText] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editType, setEditType] = useState<"todo" | "wishlist" | null>(null);
+  const [editType, setEditType] = useState<"todo" | "tripTodo" | "wishlist" | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [editDue, setEditDue] = useState("");
   const [editPic, setEditPic] = useState("");
+  const [editTripId, setEditTripId] = useState<string | null>(null);
+  const [editTripTodoOriginal, setEditTripTodoOriginal] = useState<TripTodoWithSource | null>(null);
 
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimer = useRef<number | null>(null);
@@ -416,6 +420,8 @@ export default function HomePage() {
     setEditText("");
     setEditDue("");
     setEditPic("");
+    setEditTripId(null);
+    setEditTripTodoOriginal(null);
   }
 
   async function createTrip() {
@@ -468,6 +474,41 @@ export default function HomePage() {
     });
   }
 
+  function baseTripTodo(todo: TripTodoWithSource) {
+    return {
+      text: todo.text,
+      pic: todo.pic,
+      done: todo.done,
+      dueDate: todo.dueDate,
+    };
+  }
+
+  async function toggleTripTodo(todo: TripTodoWithSource) {
+    const baseTodo = baseTripTodo(todo);
+    await updateDoc(doc(db, "trips", todo.tripId), {
+      todos: arrayRemove(baseTodo),
+    });
+    await updateDoc(doc(db, "trips", todo.tripId), {
+      todos: arrayUnion({ ...baseTodo, done: !baseTodo.done }),
+    });
+  }
+
+  async function updateTripTodo() {
+    if (!editTripId || !editTripTodoOriginal) return;
+    const updatedTodo = {
+      text: editText.trim(),
+      pic: editPic.trim(),
+      done: editTripTodoOriginal.done,
+      dueDate: editDue,
+    };
+    await updateDoc(doc(db, "trips", editTripId), {
+      todos: arrayRemove(baseTripTodo(editTripTodoOriginal)),
+    });
+    await updateDoc(doc(db, "trips", editTripId), {
+      todos: arrayUnion(updatedTodo),
+    });
+  }
+
   async function createWishlistItem() {
     if (!wishText) return;
     await addDoc(collection(db, "wishlist"), {
@@ -496,6 +537,17 @@ export default function HomePage() {
     setEditText(todo.text);
     setEditDue(todo.dueDate);
     setEditPic(todo.pic ?? "");
+    setShowEditModal(true);
+  }
+
+  function openEditTripTodo(todo: TripTodoWithSource) {
+    setEditType("tripTodo");
+    setEditTripId(todo.tripId);
+    setEditTripTodoOriginal(todo);
+    setEditId(null);
+    setEditText(todo.text);
+    setEditDue(todo.dueDate);
+    setEditPic(todo.pic);
     setShowEditModal(true);
   }
 
@@ -811,9 +863,7 @@ export default function HomePage() {
                           ? `${todo.source}-${todo.id}-${todo.text}-${i}`
                           : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
                       }
-                      onMouseEnter={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
-                      onTouchStart={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
-                      onClick={() => (isGlobal ? toggleGlobalTodo(todo) : goTrip(todo.tripId))}
+                      onClick={() => (isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo))}
                       className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
                       role="button"
                       tabIndex={0}
@@ -830,19 +880,20 @@ export default function HomePage() {
                           </p>
                         </div>
 
-                        {isGlobal ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              className="icon-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEditTodo(todo);
-                              }}
-                              aria-label={strings.actions.editTodo}
-                              title={strings.actions.editTodo}
-                            >
-                              <Pencil size={18} />
-                            </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            className="icon-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isGlobal) openEditTodo(todo);
+                              else openEditTripTodo(todo);
+                            }}
+                            aria-label={strings.actions.editTodo}
+                            title={strings.actions.editTodo}
+                          >
+                            <Pencil size={18} />
+                          </button>
+                          {isGlobal ? (
                             <button
                               className="icon-btn"
                               onClick={(e) => {
@@ -854,8 +905,8 @@ export default function HomePage() {
                             >
                               <Trash2 size={18} />
                             </button>
-                          </div>
-                        ) : null}
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   );
@@ -1046,9 +1097,7 @@ export default function HomePage() {
                         : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
                     }
                     className={`row-cute ${todo.done ? "opacity-80" : ""}`}
-                    onMouseEnter={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
-                    onTouchStart={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
-                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : goTrip(todo.tripId))}
+                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo))}
                     role="button"
                     tabIndex={0}
                   >
@@ -1063,19 +1112,20 @@ export default function HomePage() {
                       </p>
                     </div>
 
-                    {isGlobal ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          className="icon-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditTodo(todo);
-                          }}
-                          aria-label={strings.actions.editTodo}
-                          title={strings.actions.editTodo}
-                        >
-                          <Pencil size={18} />
-                        </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="icon-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isGlobal) openEditTodo(todo);
+                          else openEditTripTodo(todo);
+                        }}
+                        aria-label={strings.actions.editTodo}
+                        title={strings.actions.editTodo}
+                      >
+                        <Pencil size={18} />
+                      </button>
+                      {isGlobal ? (
                         <button
                           className="icon-btn"
                           onClick={(e) => {
@@ -1087,8 +1137,8 @@ export default function HomePage() {
                         >
                           <Trash2 size={18} />
                         </button>
-                      </div>
-                    ) : null}
+                      ) : null}
+                    </div>
                   </div>
                 );
               })}
@@ -1408,14 +1458,14 @@ export default function HomePage() {
           >
             <div className="flex items-center justify-between mb-3">
               <p className="text-lg font-extrabold tracking-tight">
-                {editType === "todo" ? strings.labels.editTodo : strings.labels.editWishlistItem}
+                {editType === "wishlist" ? strings.labels.editWishlistItem : strings.labels.editTodo}
               </p>
               <button className="mini-nav" onClick={resetEditInputs}>
                 ✕
               </button>
             </div>
 
-            {editType === "todo" && (
+            {(editType === "todo" || editType === "tripTodo") && (
               <div className="space-y-3">
                 <input
                   placeholder={strings.labels.taskPlaceholder}
@@ -1438,13 +1488,20 @@ export default function HomePage() {
                 </div>
                 <button
                   onClick={async () => {
-                    if (!activeTodo) return;
                     if (!editText.trim() || !editDue) return;
-                    await updateGlobalTodo(activeTodo);
+                    if (editType === "todo") {
+                      if (!activeTodo) return;
+                      await updateGlobalTodo(activeTodo);
+                    }
+                    if (editType === "tripTodo") {
+                      if (!editPic.trim()) return;
+                      if (!editTripTodoOriginal) return;
+                      await updateTripTodo();
+                    }
                     resetEditInputs();
                   }}
                   className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-                  disabled={!editText.trim() || !editDue}
+                  disabled={!editText.trim() || !editDue || (editType === "tripTodo" && !editPic.trim())}
                 >
                   {strings.actions.saveChanges}
                 </button>
