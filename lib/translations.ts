@@ -36,6 +36,8 @@ export const translations: Record<
       planTrip: string;
       addTask: string;
       addSomedayIdea: string;
+      editTodo: string;
+      editWishlistItem: string;
       eventName: string;
       tripName: string;
       taskPlaceholder: string;
@@ -110,6 +112,9 @@ export const translations: Record<
       deleteTrip: string;
       deleteTodo: string;
       deleteWishlist: string;
+      editTodo: string;
+      editWishlist: string;
+      saveChanges: string;
       removeParticipant: string;
       back: string;
     };
@@ -151,6 +156,8 @@ export const translations: Record<
       planTrip: "Plan a Trip ✨",
       addTask: "Add a Task ✨",
       addSomedayIdea: "Add a Someday Idea 💭",
+      editTodo: "Edit TODO ✏️",
+      editWishlistItem: "Edit Wishlist ✏️",
       eventName: "Event name",
       tripName: "Trip name",
       taskPlaceholder: "What do you need to do?",
@@ -225,6 +232,9 @@ export const translations: Record<
       deleteTrip: "Delete trip",
       deleteTodo: "Delete todo",
       deleteWishlist: "Delete wishlist item",
+      editTodo: "Edit todo",
+      editWishlist: "Edit wishlist item",
+      saveChanges: "Save changes",
       removeParticipant: "Remove participant",
       back: "Back",
     },
@@ -274,6 +284,8 @@ export const translations: Record<
       planTrip: "旅行を計画 ✨",
       addTask: "タスクを追加 ✨",
       addSomedayIdea: "いつかのアイデア 💭",
+      editTodo: "TODOを編集 ✏️",
+      editWishlistItem: "ウィッシュリストを編集 ✏️",
       eventName: "イベント名",
       tripName: "旅行名",
       taskPlaceholder: "何をする？",
@@ -348,6 +360,9 @@ export const translations: Record<
       deleteTrip: "旅行を削除",
       deleteTodo: "TODOを削除",
       deleteWishlist: "ウィッシュリストを削除",
+      editTodo: "TODOを編集",
+      editWishlist: "ウィッシュリストを編集",
+      saveChanges: "変更を保存",
       removeParticipant: "参加者を削除",
       back: "戻る",
     },

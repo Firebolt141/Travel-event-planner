@@ -9,6 +9,8 @@ import {
   deleteDoc,
   doc,
   updateDoc,
+  arrayRemove,
+  arrayUnion,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import {
@@ -27,6 +29,7 @@ import {
   CheckSquare,
   Heart,
   Languages,
+  Pencil,
   Moon,
   Sun,
 } from "lucide-react";
@@ -52,6 +55,7 @@ type GlobalTodo = {
   id: string;
   text: string;
   dueDate: string;
+  pic?: string;
   done: boolean;
   createdAt?: string;
 };
@@ -80,7 +84,7 @@ type EventItem = {
   startDate: string;
   endDate: string;
   startTime: string;
-  endTime: string;
+  endTime?: string;
   location?: string;
   recurring?: boolean;
 };
@@ -192,8 +196,17 @@ export default function HomePage() {
 
   const [todoText, setTodoText] = useState("");
   const [todoDue, setTodoDue] = useState("");
+  const [todoPic, setTodoPic] = useState("");
 
   const [wishText, setWishText] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editType, setEditType] = useState<"todo" | "tripTodo" | "wishlist" | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editDue, setEditDue] = useState("");
+  const [editPic, setEditPic] = useState("");
+  const [editTripId, setEditTripId] = useState<string | null>(null);
+  const [editTripTodoOriginal, setEditTripTodoOriginal] = useState<TripTodoWithSource | null>(null);
 
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimer = useRef<number | null>(null);
@@ -398,8 +411,17 @@ export default function HomePage() {
     setEventRecurring("no");
     setTodoText("");
     setTodoDue("");
+    setTodoPic("");
     setWishText("");
     setCreateMode("pick");
+    setShowEditModal(false);
+    setEditType(null);
+    setEditId(null);
+    setEditText("");
+    setEditDue("");
+    setEditPic("");
+    setEditTripId(null);
+    setEditTripTodoOriginal(null);
   }
 
   async function createTrip() {
@@ -410,13 +432,13 @@ export default function HomePage() {
   }
 
   async function createEvent() {
-    if (!name || !eventStartDate || !eventEndDate || !startTime || !endTime) return;
+    if (!name || !eventStartDate || !eventEndDate || !startTime) return;
     await addDoc(collection(db, "events"), {
       name,
       startDate: eventStartDate,
       endDate: eventEndDate,
       startTime,
-      endTime,
+      endTime: endTime || "",
       location,
       recurring: eventRecurring === "yes",
     });
@@ -429,6 +451,7 @@ export default function HomePage() {
     await addDoc(collection(db, "todos"), {
       text: todoText,
       dueDate: todoDue,
+      pic: todoPic,
       done: false,
       createdAt: new Date().toISOString(),
     });
@@ -441,6 +464,49 @@ export default function HomePage() {
   }
   async function deleteGlobalTodo(todo: GlobalTodo) {
     await deleteDoc(doc(db, "todos", todo.id));
+  }
+
+  async function updateGlobalTodo(todo: GlobalTodo) {
+    await updateDoc(doc(db, "todos", todo.id), {
+      text: editText.trim(),
+      dueDate: editDue,
+      pic: editPic.trim(),
+    });
+  }
+
+  function baseTripTodo(todo: TripTodoWithSource) {
+    return {
+      text: todo.text,
+      pic: todo.pic,
+      done: todo.done,
+      dueDate: todo.dueDate,
+    };
+  }
+
+  async function toggleTripTodo(todo: TripTodoWithSource) {
+    const baseTodo = baseTripTodo(todo);
+    await updateDoc(doc(db, "trips", todo.tripId), {
+      todos: arrayRemove(baseTodo),
+    });
+    await updateDoc(doc(db, "trips", todo.tripId), {
+      todos: arrayUnion({ ...baseTodo, done: !baseTodo.done }),
+    });
+  }
+
+  async function updateTripTodo() {
+    if (!editTripId || !editTripTodoOriginal) return;
+    const updatedTodo = {
+      text: editText.trim(),
+      pic: editPic.trim(),
+      done: editTripTodoOriginal.done,
+      dueDate: editDue,
+    };
+    await updateDoc(doc(db, "trips", editTripId), {
+      todos: arrayRemove(baseTripTodo(editTripTodoOriginal)),
+    });
+    await updateDoc(doc(db, "trips", editTripId), {
+      todos: arrayUnion(updatedTodo),
+    });
   }
 
   async function createWishlistItem() {
@@ -461,6 +527,39 @@ export default function HomePage() {
     await deleteDoc(doc(db, "wishlist", item.id));
   }
 
+  async function updateWishlistItem(item: WishlistItem) {
+    await updateDoc(doc(db, "wishlist", item.id), { text: editText.trim() });
+  }
+
+  function openEditTodo(todo: GlobalTodo) {
+    setEditType("todo");
+    setEditId(todo.id);
+    setEditText(todo.text);
+    setEditDue(todo.dueDate);
+    setEditPic(todo.pic ?? "");
+    setShowEditModal(true);
+  }
+
+  function openEditTripTodo(todo: TripTodoWithSource) {
+    setEditType("tripTodo");
+    setEditTripId(todo.tripId);
+    setEditTripTodoOriginal(todo);
+    setEditId(null);
+    setEditText(todo.text);
+    setEditDue(todo.dueDate);
+    setEditPic(todo.pic);
+    setShowEditModal(true);
+  }
+
+  function openEditWishlist(item: WishlistItem) {
+    setEditType("wishlist");
+    setEditId(item.id);
+    setEditText(item.text);
+    setEditDue("");
+    setEditPic("");
+    setShowEditModal(true);
+  }
+
   // Delay fix helpers: prefetch + transition
   const goEvent = (id: string) => startTransition(() => router.push(`/event/${id}`));
   const goTrip = (id: string) => startTransition(() => router.push(`/trip/${id}`));
@@ -473,6 +572,18 @@ export default function HomePage() {
   const confettiSeed = stringSeed(todayStr);
   const countLabel = (count: number, type: CountType) =>
     language === "ja" ? `${count}${strings.labels[type]}` : `${count} ${strings.labels[type]}`;
+
+  function resetEditInputs() {
+    setShowEditModal(false);
+    setEditType(null);
+    setEditId(null);
+    setEditText("");
+    setEditDue("");
+    setEditPic("");
+  }
+
+  const activeTodo = editType === "todo" ? globalTodos.find((todo) => todo.id === editId) : null;
+  const activeWishlist = editType === "wishlist" ? wishlist.find((item) => item.id === editId) : null;
 
   /* ---------------- LOGIN ---------------- */
   if (!user) {
@@ -710,7 +821,8 @@ export default function HomePage() {
                   >
                     <p className="font-semibold">{event.name}</p>
                     <p className="text-xs opacity-80">
-                      {event.startTime} → {event.endTime}
+                      {event.startTime}
+                      {event.endTime ? ` → ${event.endTime}` : ""}
                       {event.location ? ` • ${event.location}` : ""}
                     </p>
                   </div>
@@ -751,9 +863,7 @@ export default function HomePage() {
                           ? `${todo.source}-${todo.id}-${todo.text}-${i}`
                           : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
                       }
-                      onMouseEnter={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
-                      onTouchStart={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
-                      onClick={() => (isGlobal ? toggleGlobalTodo(todo) : goTrip(todo.tripId))}
+                      onClick={() => (isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo))}
                       className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
                       role="button"
                       tabIndex={0}
@@ -763,24 +873,40 @@ export default function HomePage() {
                           <p className={`font-semibold ${todo.done ? "line-through opacity-80" : ""}`}>{todo.text}</p>
                           <p className="text-xs opacity-80">
                             {isGlobal
-                              ? `${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}`
+                              ? `${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}${
+                                  todo.pic ? ` • ${strings.labels.pic}: ${todo.pic}` : ""
+                                }`
                               : `${todo.tripName} • ${strings.labels.pic}: ${todo.pic}`}
                           </p>
                         </div>
 
-                        {isGlobal ? (
+                        <div className="flex items-center gap-1">
                           <button
                             className="icon-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteGlobalTodo(todo);
+                              if (isGlobal) openEditTodo(todo);
+                              else openEditTripTodo(todo);
                             }}
-                            aria-label={strings.actions.deleteTodo}
-                            title={strings.actions.deleteTodo}
+                            aria-label={strings.actions.editTodo}
+                            title={strings.actions.editTodo}
                           >
-                            <Trash2 size={18} />
+                            <Pencil size={18} />
                           </button>
-                        ) : null}
+                          {isGlobal ? (
+                            <button
+                              className="icon-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteGlobalTodo(todo);
+                              }}
+                              aria-label={strings.actions.deleteTodo}
+                              title={strings.actions.deleteTodo}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   );
@@ -866,7 +992,8 @@ export default function HomePage() {
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-cute-muted">
                       <span className="inline-flex items-center gap-1">
                         <Clock size={13} />
-                        {event.startDate} {event.startTime} → {event.endDate} {event.endTime}
+                        {event.startDate} {event.startTime}
+                        {event.endTime ? ` → ${event.endDate} ${event.endTime}` : ` → ${event.endDate}`}
                       </span>
                       {event.location ? (
                         <span className="inline-flex items-center gap-1">
@@ -970,34 +1097,48 @@ export default function HomePage() {
                         : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
                     }
                     className={`row-cute ${todo.done ? "opacity-80" : ""}`}
-                    onMouseEnter={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
-                    onTouchStart={() => (!isGlobal ? prefetchTrip(todo.tripId) : undefined)}
-                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : goTrip(todo.tripId))}
+                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo))}
                     role="button"
                     tabIndex={0}
                   >
                     <div className="min-w-0">
                       <p className={`font-semibold truncate ${todo.done ? "line-through text-cute-muted" : ""}`}>{todo.text}</p>
-                    <p className="text-xs text-cute-muted mt-1">
+                      <p className="text-xs text-cute-muted mt-1">
                         {isGlobal
-                          ? `${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}`
+                          ? `${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}${
+                              todo.pic ? ` • ${strings.labels.pic}: ${todo.pic}` : ""
+                            }`
                           : `${todo.tripName} • ${strings.labels.pic}: ${todo.pic} • ${strings.labels.due}: ${todo.dueDate}`}
                       </p>
                     </div>
 
-                    {isGlobal ? (
+                    <div className="flex items-center gap-1">
                       <button
                         className="icon-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteGlobalTodo(todo);
+                          if (isGlobal) openEditTodo(todo);
+                          else openEditTripTodo(todo);
                         }}
-                        aria-label={strings.actions.deleteTodo}
-                        title={strings.actions.deleteTodo}
+                        aria-label={strings.actions.editTodo}
+                        title={strings.actions.editTodo}
                       >
-                        <Trash2 size={18} />
+                        <Pencil size={18} />
                       </button>
-                    ) : null}
+                      {isGlobal ? (
+                        <button
+                          className="icon-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteGlobalTodo(todo);
+                          }}
+                          aria-label={strings.actions.deleteTodo}
+                          title={strings.actions.deleteTodo}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 );
               })}
@@ -1034,17 +1175,30 @@ export default function HomePage() {
                     <p className="text-xs text-cute-muted mt-1">{strings.messages.somedayTap}</p>
                   </div>
 
-                  <button
-                    className="icon-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteWishlistItem(w);
-                    }}
-                    aria-label={strings.actions.deleteWishlist}
-                    title={strings.actions.deleteWishlist}
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      className="icon-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditWishlist(w);
+                      }}
+                      aria-label={strings.actions.editWishlist}
+                      title={strings.actions.editWishlist}
+                    >
+                      <Pencil size={18} />
+                    </button>
+                    <button
+                      className="icon-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteWishlistItem(w);
+                      }}
+                      aria-label={strings.actions.deleteWishlist}
+                      title={strings.actions.deleteWishlist}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               ))}
 
@@ -1215,7 +1369,7 @@ export default function HomePage() {
                     <button
                       onClick={createEvent}
                       className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-                      disabled={!name || !eventStartDate || !eventEndDate || !startTime || !endTime}
+                      disabled={!name || !eventStartDate || !eventEndDate || !startTime}
                     >
                       {strings.labels.createEvent}
                     </button>
@@ -1251,6 +1405,15 @@ export default function HomePage() {
                     <p className="text-lg font-extrabold">{strings.labels.addTask}</p>
                     <input placeholder={strings.labels.taskPlaceholder} value={todoText} onChange={(e) => setTodoText(e.target.value)} className="cute-input" />
                     <div>
+                      <p className="cute-label">{strings.labels.pic}</p>
+                      <input
+                        placeholder={strings.labels.assignPic}
+                        value={todoPic}
+                        onChange={(e) => setTodoPic(e.target.value)}
+                        className="cute-input"
+                      />
+                    </div>
+                    <div>
                       <p className="cute-label">{strings.labels.dueDate}</p>
                       <input type="date" value={todoDue} onChange={(e) => setTodoDue(e.target.value)} className="cute-input" />
                     </div>
@@ -1277,6 +1440,94 @@ export default function HomePage() {
                     </button>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div
+          className="fixed inset-0 bg-black/35 flex items-end"
+          onClick={() => resetEditInputs()}
+        >
+          <div
+            className="modal-sheet w-full rounded-t-[28px] p-6 shadow-[0_-20px_60px_rgba(0,0,0,0.35)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-lg font-extrabold tracking-tight">
+                {editType === "wishlist" ? strings.labels.editWishlistItem : strings.labels.editTodo}
+              </p>
+              <button className="mini-nav" onClick={resetEditInputs}>
+                ✕
+              </button>
+            </div>
+
+            {(editType === "todo" || editType === "tripTodo") && (
+              <div className="space-y-3">
+                <input
+                  placeholder={strings.labels.taskPlaceholder}
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  className="cute-input"
+                />
+                <div>
+                  <p className="cute-label">{strings.labels.pic}</p>
+                  <input
+                    placeholder={strings.labels.assignPic}
+                    value={editPic}
+                    onChange={(e) => setEditPic(e.target.value)}
+                    className="cute-input"
+                  />
+                </div>
+                <div>
+                  <p className="cute-label">{strings.labels.dueDate}</p>
+                  <input type="date" value={editDue} onChange={(e) => setEditDue(e.target.value)} className="cute-input" />
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!editText.trim() || !editDue) return;
+                    if (editType === "todo") {
+                      if (!activeTodo) return;
+                      await updateGlobalTodo(activeTodo);
+                    }
+                    if (editType === "tripTodo") {
+                      if (!editPic.trim()) return;
+                      if (!editTripTodoOriginal) return;
+                      await updateTripTodo();
+                    }
+                    resetEditInputs();
+                  }}
+                  className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
+                  disabled={!editText.trim() || !editDue || (editType === "tripTodo" && !editPic.trim())}
+                >
+                  {strings.actions.saveChanges}
+                </button>
+              </div>
+            )}
+
+            {editType === "wishlist" && (
+              <div className="space-y-3">
+                <input
+                  placeholder={strings.labels.wishPlaceholder}
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  className="cute-input"
+                />
+                <button
+                  onClick={async () => {
+                    if (!activeWishlist) return;
+                    if (!editText.trim()) return;
+                    await updateWishlistItem(activeWishlist);
+                    resetEditInputs();
+                  }}
+                  className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
+                  disabled={!editText.trim()}
+                >
+                  {strings.actions.saveChanges}
+                </button>
               </div>
             )}
           </div>
