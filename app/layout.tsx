@@ -4,7 +4,7 @@ import ThemeClient from "./components/ThemeClient";
 
 // If you already have metadata/icons/manifest here, copy-paste those back in.
 export const metadata: Metadata = {
-  title: "Asuka Planner",
+  title: "Meet Asuka",
   description: "Events • Trips • TODOs • Wishlist",
 };
 
@@ -21,6 +21,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     var t = localStorage.getItem("asukaTheme");
     var theme = (t === "night") ? "night" : "day";
     document.documentElement.dataset.theme = theme;
+    var p = localStorage.getItem("asukaPreset");
+    if (p === "mint" || p === "ocean" || p === "sunset" || p === "lilac") {
+      document.documentElement.dataset.preset = p;
+    } else {
+      document.documentElement.dataset.preset = "lilac";
+    }
   } catch (e) {}
 })();
             `.trim(),
