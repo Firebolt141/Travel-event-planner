@@ -1108,7 +1108,9 @@ export default function HomePage() {
                               className="icon-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                deleteGlobalTodo(todo);
+                                if (todo.source === "global") {
+                                  deleteGlobalTodo(todo);
+                                }
                               }}
                               aria-label={strings.actions.deleteTodo}
                               title={strings.actions.deleteTodo}
@@ -1360,7 +1362,9 @@ export default function HomePage() {
                           className="icon-btn"
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteGlobalTodo(todo);
+                            if (todo.source === "global") {
+                              deleteGlobalTodo(todo);
+                            }
                           }}
                           aria-label={strings.actions.deleteTodo}
                           title={strings.actions.deleteTodo}
