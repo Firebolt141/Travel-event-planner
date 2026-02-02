@@ -127,8 +127,6 @@ export const translations: Record<
       saveChanges: string;
       moveUp: string;
       moveDown: string;
-      done: string;
-      undo: string;
       removeParticipant: string;
       createNextTrip: string;
       back: string;
@@ -262,8 +260,6 @@ export const translations: Record<
       saveChanges: "Save changes",
       moveUp: "Move up",
       moveDown: "Move down",
-      done: "Mark done",
-      undo: "Mark active",
       removeParticipant: "Remove participant",
       createNextTrip: "Create next trip",
       back: "Back",
@@ -405,8 +401,6 @@ export const translations: Record<
       saveChanges: "変更を保存",
       moveUp: "上へ移動",
       moveDown: "下へ移動",
-      done: "完了にする",
-      undo: "未完了に戻す",
       removeParticipant: "参加者を削除",
       createNextTrip: "次の旅行を作成",
       back: "戻る",
