@@ -26,6 +26,17 @@ type ItemData = {
   participants?: Participant[];
   recurrence?: RecurrenceType;
 };
+type CountType = "tasks" | "people";
+type ItemData = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  location?: string;
+  description?: string;
+  participants?: Participant[];
+  todos?: Todo[];
+};
 
 /* ---------------- PAGE ---------------- */
 
@@ -124,6 +135,39 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
       participants: item.participants || [],
       recurrence: item.recurrence,
     });
+  }
+
+  function openEditTodo(todo: Todo) {
+    setEditTodoOriginal(todo);
+    setEditTodoText(todo.text);
+    setEditTodoPic(todo.pic);
+    setEditTodoDue(todo.dueDate);
+    setShowEditTodo(true);
+  }
+
+  function resetEditTodo() {
+    setShowEditTodo(false);
+    setEditTodoOriginal(null);
+    setEditTodoText("");
+    setEditTodoPic("");
+    setEditTodoDue("");
+  }
+
+  async function updateTodo() {
+    if (!editTodoOriginal) return;
+    if (!editTodoText.trim() || !editTodoPic.trim() || !editTodoDue) return;
+    await updateDoc(doc(db, collectionName, id), {
+      todos: arrayRemove(editTodoOriginal),
+    });
+    await updateDoc(doc(db, collectionName, id), {
+      todos: arrayUnion({
+        ...editTodoOriginal,
+        text: editTodoText.trim(),
+        pic: editTodoPic.trim(),
+        dueDate: editTodoDue,
+      }),
+    });
+    resetEditTodo();
   }
 
   /* ---------------- UI ---------------- */
@@ -290,6 +334,56 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
         </div>
 
       </main>
+
+      {showEditTodo && (
+        <div className="fixed inset-0 bg-black/35 flex items-end" onClick={resetEditTodo}>
+          <div
+            className="modal-sheet w-full rounded-t-[28px] p-6 shadow-[0_-20px_60px_rgba(0,0,0,0.35)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-lg font-extrabold tracking-tight">{strings.labels.editTodo}</p>
+              <button className="mini-nav" onClick={resetEditTodo}>
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <input
+                placeholder={strings.labels.task}
+                value={editTodoText}
+                onChange={(event) => setEditTodoText(event.target.value)}
+                className="cute-input"
+              />
+              <div>
+                <p className="cute-label">{strings.labels.pic}</p>
+                <input
+                  placeholder={strings.labels.assignPic}
+                  value={editTodoPic}
+                  onChange={(event) => setEditTodoPic(event.target.value)}
+                  className="cute-input"
+                />
+              </div>
+              <div>
+                <p className="cute-label">{strings.labels.dueDate}</p>
+                <input
+                  type="date"
+                  value={editTodoDue}
+                  onChange={(event) => setEditTodoDue(event.target.value)}
+                  className="cute-input"
+                />
+              </div>
+              <button
+                onClick={updateTodo}
+                className="w-full py-3 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
+                disabled={!editTodoText.trim() || !editTodoPic.trim() || !editTodoDue}
+              >
+                {strings.actions.saveChanges}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
