@@ -327,7 +327,7 @@ export default function HomePage() {
     const all: CombinedTodo[] = [...fromGlobal, ...fromTrips];
     all.sort(compareTodos);
     return all.slice(0, 10);
-  }, [trips, globalTodos]);
+  }, [globalTodos]);
 
   const eventsSoon = useMemo(() => {
     const sorted = [...(events || [])].sort((a, b) => String(a.startDate || "").localeCompare(String(b.startDate || "")));
@@ -1303,6 +1303,17 @@ export default function HomePage() {
                     role="button"
                     tabIndex={0}
                   >
+                    <button
+                      className="icon-btn"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleGlobalTodo(todo);
+                      }}
+                      aria-label={todo.done ? strings.actions.undo : strings.actions.done}
+                      title={todo.done ? strings.actions.undo : strings.actions.done}
+                    >
+                      <CheckSquare size={16} />
+                    </button>
                     <div className="min-w-0">
                       <p className={`font-semibold truncate ${todo.done ? "line-through text-cute-muted" : ""}`}>{todo.text}</p>
                       <p className="text-xs text-cute-muted mt-1">
