@@ -574,6 +574,14 @@ export default function HomePage() {
     });
   }
 
+  function toggleCombinedTodo(todo: CombinedTodo) {
+    if (todo.source === "global") {
+      toggleGlobalTodo(todo);
+    } else {
+      toggleTripTodo(todo);
+    }
+  }
+
   async function updateTripTodo() {
     if (!editTripId || !editTripTodoOriginal) return;
     const updatedTodo = {
@@ -1055,10 +1063,8 @@ export default function HomePage() {
                           ? `${todo.source}-${todo.id}-${todo.text}-${i}`
                           : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
                       }
-                      onClick={() => (isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo))}
-                      onKeyDown={handleKeyActivate(() =>
-                        isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo)
-                      )}
+                      onClick={() => toggleCombinedTodo(todo)}
+                      onKeyDown={handleKeyActivate(() => toggleCombinedTodo(todo))}
                       className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
                       role="button"
                       tabIndex={0}
@@ -1080,8 +1086,11 @@ export default function HomePage() {
                             className="icon-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (isGlobal) openEditTodo(todo);
-                              else openEditTripTodo(todo);
+                              if (todo.source === "global") {
+                                openEditTodo(todo);
+                              } else {
+                                openEditTripTodo(todo);
+                              }
                             }}
                             aria-label={strings.actions.editTodo}
                             title={strings.actions.editTodo}
@@ -1093,7 +1102,9 @@ export default function HomePage() {
                               className="icon-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                deleteGlobalTodo(todo);
+                                if (todo.source === "global") {
+                                  deleteGlobalTodo(todo);
+                                }
                               }}
                               aria-label={strings.actions.deleteTodo}
                               title={strings.actions.deleteTodo}
@@ -1296,10 +1307,8 @@ export default function HomePage() {
                         : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
                     }
                     className={`row-cute ${todo.done ? "opacity-80" : ""}`}
-                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo))}
-                    onKeyDown={handleKeyActivate(() =>
-                      isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo)
-                    )}
+                    onClick={() => toggleCombinedTodo(todo)}
+                    onKeyDown={handleKeyActivate(() => toggleCombinedTodo(todo))}
                     role="button"
                     tabIndex={0}
                   >
@@ -1307,7 +1316,9 @@ export default function HomePage() {
                       className="icon-btn"
                       onClick={(event) => {
                         event.stopPropagation();
-                        toggleGlobalTodo(todo);
+                        if (todo.source === "global") {
+                          toggleGlobalTodo(todo);
+                        }
                       }}
                       aria-label={todo.done ? strings.actions.undo : strings.actions.done}
                       title={todo.done ? strings.actions.undo : strings.actions.done}
@@ -1330,8 +1341,11 @@ export default function HomePage() {
                         className="icon-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (isGlobal) openEditTodo(todo);
-                          else openEditTripTodo(todo);
+                          if (todo.source === "global") {
+                            openEditTodo(todo);
+                          } else {
+                            openEditTripTodo(todo);
+                          }
                         }}
                         aria-label={strings.actions.editTodo}
                         title={strings.actions.editTodo}
@@ -1343,7 +1357,9 @@ export default function HomePage() {
                           className="icon-btn"
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteGlobalTodo(todo);
+                            if (todo.source === "global") {
+                              deleteGlobalTodo(todo);
+                            }
                           }}
                           aria-label={strings.actions.deleteTodo}
                           title={strings.actions.deleteTodo}
