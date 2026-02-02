@@ -133,6 +133,8 @@ export const translations: Record<
       editTodo: string;
       editWishlist: string;
       saveChanges: string;
+      moveUp: string;
+      moveDown: string;
       removeParticipant: string;
       createNextTrip: string;
       back: string;
@@ -254,7 +256,7 @@ export const translations: Record<
       remindersDenied: "Notifications are blocked in your browser settings.",
       remindersUnsupported: "Push notifications aren’t supported in this browser.",
       remindersMissingKey: "FCM VAPID key missing. Add NEXT_PUBLIC_FCM_VAPID_KEY.",
-      remindersSignIn: "Sign in to enable push reminders.",
+      remindersSignIn: "Push reminders require a signed-in account (demo mode doesn’t support it yet).",
     },
     actions: {
       seeYouLater: "See you later",
@@ -272,6 +274,8 @@ export const translations: Record<
       editTodo: "Edit todo",
       editWishlist: "Edit wishlist item",
       saveChanges: "Save changes",
+      moveUp: "Move up",
+      moveDown: "Move down",
       removeParticipant: "Remove participant",
       createNextTrip: "Create next trip",
       back: "Back",
@@ -401,7 +405,7 @@ export const translations: Record<
       remindersDenied: "ブラウザで通知がブロックされています。",
       remindersUnsupported: "このブラウザは通知に対応していません。",
       remindersMissingKey: "FCMのVAPIDキーが未設定です。",
-      remindersSignIn: "通知を有効にするにはログインしてください。",
+      remindersSignIn: "通知にはログインが必要です（デモは未対応）。",
     },
     actions: {
       seeYouLater: "またね",
@@ -419,6 +423,8 @@ export const translations: Record<
       editTodo: "TODOを編集",
       editWishlist: "ウィッシュリストを編集",
       saveChanges: "変更を保存",
+      moveUp: "上へ移動",
+      moveDown: "下へ移動",
       removeParticipant: "参加者を削除",
       createNextTrip: "次の旅行を作成",
       back: "戻る",

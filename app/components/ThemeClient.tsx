@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 type ThemeMode = "day" | "night";
-type ThemePreset = "lilac" | "mint" | "ocean" | "sunset";
+type ThemePreset = "lilac" | "mint" | "ocean" | "sunset" | "aurora" | "berry" | "citrus";
 
 type ThemeCtx = {
   theme: ThemeMode;
@@ -39,7 +39,15 @@ export default function ThemeClient({ children }: { children: React.ReactNode })
     if (typeof window === "undefined") return "lilac";
     try {
       const saved = localStorage.getItem("asukaPreset");
-      if (saved === "mint" || saved === "ocean" || saved === "sunset" || saved === "lilac") {
+      if (
+        saved === "mint" ||
+        saved === "ocean" ||
+        saved === "sunset" ||
+        saved === "lilac" ||
+        saved === "aurora" ||
+        saved === "berry" ||
+        saved === "citrus"
+      ) {
         return saved;
       }
       return "lilac";
@@ -77,7 +85,15 @@ export default function ThemeClient({ children }: { children: React.ReactNode })
         setThemeState(e.newValue);
       }
       if (e.key === "asukaPreset") {
-        if (e.newValue === "mint" || e.newValue === "ocean" || e.newValue === "sunset" || e.newValue === "lilac") {
+        if (
+          e.newValue === "mint" ||
+          e.newValue === "ocean" ||
+          e.newValue === "sunset" ||
+          e.newValue === "lilac" ||
+          e.newValue === "aurora" ||
+          e.newValue === "berry" ||
+          e.newValue === "citrus"
+        ) {
           setPresetState(e.newValue);
         }
       }

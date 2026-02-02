@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     var theme = (t === "night") ? "night" : "day";
     document.documentElement.dataset.theme = theme;
     var p = localStorage.getItem("asukaPreset");
-    if (p === "mint" || p === "ocean" || p === "sunset" || p === "lilac") {
+    if (p === "mint" || p === "ocean" || p === "sunset" || p === "lilac" || p === "aurora" || p === "berry" || p === "citrus") {
       document.documentElement.dataset.preset = p;
     } else {
       document.documentElement.dataset.preset = "lilac";

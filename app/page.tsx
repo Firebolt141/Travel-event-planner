@@ -29,6 +29,9 @@ import {
   Plane,
   CheckSquare,
   Heart,
+  Palette,
+  ArrowUp,
+  ArrowDown,
   Languages,
   Pencil,
   Moon,
@@ -70,6 +73,7 @@ type WishlistItem = {
   text: string;
   done: boolean;
   createdAt?: string;
+  order?: number;
 };
 type TripTodo = {
   text: string;
@@ -226,7 +230,6 @@ export default function HomePage() {
   const [editReminderAt, setEditReminderAt] = useState("");
   const [editTripId, setEditTripId] = useState<string | null>(null);
   const [editTripTodoOriginal, setEditTripTodoOriginal] = useState<TripTodoWithSource | null>(null);
-  const [dragTodo, setDragTodo] = useState<CombinedTodo | null>(null);
   const [reminderMessage, setReminderMessage] = useState("");
 
   const [showConfetti, setShowConfetti] = useState(false);
@@ -363,10 +366,19 @@ export default function HomePage() {
     return sorted.slice(0, 6);
   }, [trips]);
 
-  const wishlistSoon = useMemo(() => {
-    const sorted = [...(wishlist || [])].sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-    return sorted.slice(0, 10);
+  const wishlistOrderValue = (item: WishlistItem) => {
+    if (typeof item.order === "number") return item.order;
+    if (item.createdAt && !Number.isNaN(Date.parse(item.createdAt))) {
+      return Date.parse(item.createdAt);
+    }
+    return 0;
+  };
+  const wishlistOrdered = useMemo(() => {
+    return [...(wishlist || [])].sort((a, b) => wishlistOrderValue(a) - wishlistOrderValue(b));
   }, [wishlist]);
+  const wishlistSoon = useMemo(() => {
+    return wishlistOrdered.slice(0, 10);
+  }, [wishlistOrdered]);
 
   const todaysTodos = (() => {
     const forToday = (globalTodos || []).filter((t) => t.dueDate === todayStr);
@@ -376,9 +388,6 @@ export default function HomePage() {
 
   const todayAllDone = todaysTodos.length > 0 && todaysTodos.every((t) => !!t.done);
   const filteredTodosForDate = showTodoDots ? todosForDateCombined : [];
-  const completedForDate = filteredTodosForDate.filter((todo) => todo.done).length;
-  const progressPercent =
-    filteredTodosForDate.length === 0 ? 0 : Math.round((completedForDate / filteredTodosForDate.length) * 100);
   const eventsForDate = showEventDots ? events.filter((e) => e.startDate === selectedDate) : [];
   const tripsForDate = showTripDots
     ? trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate))
@@ -621,64 +630,20 @@ export default function HomePage() {
     });
   }
 
-  async function reorderGlobalTodos(sourceId: string, targetId: string) {
-    if (sourceId === targetId) return;
-    const sorted = [...globalTodos].sort((a, b) => todoOrderValue(a) - todoOrderValue(b));
-    const fromIndex = sorted.findIndex((todo) => todo.id === sourceId);
-    const toIndex = sorted.findIndex((todo) => todo.id === targetId);
-    if (fromIndex < 0 || toIndex < 0) return;
-    const [moved] = sorted.splice(fromIndex, 1);
-    sorted.splice(toIndex, 0, moved);
+  async function moveWishlistItem(itemId: string, direction: -1 | 1) {
+    const ordered = wishlistOrdered;
+    const index = ordered.findIndex((item) => item.id === itemId);
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= ordered.length) return;
+    const current = ordered[index];
+    const target = ordered[targetIndex];
     const base = Date.now();
-    await Promise.all(
-      sorted.map((todo, index) =>
-        updateDoc(doc(db, "todos", todo.id), {
-          order: base + index,
-        })
-      )
-    );
-  }
-
-  async function reorderTripTodos(source: TripTodoWithSource, target: TripTodoWithSource) {
-    if (source.tripId !== target.tripId) return;
-    const trip = trips.find((item) => item.id === source.tripId);
-    if (!trip || !trip.todos) return;
-    const todos = [...trip.todos];
-    const findIndex = (todo: TripTodo) =>
-      todos.findIndex(
-        (item) =>
-          item.text === todo.text &&
-          item.pic === todo.pic &&
-          item.dueDate === todo.dueDate &&
-          item.done === todo.done &&
-          item.order === todo.order
-      );
-    const fromIndex = findIndex(source);
-    const toIndex = findIndex(target);
-    if (fromIndex < 0 || toIndex < 0) return;
-    const [moved] = todos.splice(fromIndex, 1);
-    todos.splice(toIndex, 0, moved);
-    const base = Date.now();
-    const reordered = todos.map((todo, index) => ({
-      ...todo,
-      order: base + index,
-    }));
-    await updateDoc(doc(db, "trips", source.tripId), { todos: reordered });
-  }
-
-  function handleDragStart(todo: CombinedTodo) {
-    setDragTodo(todo);
-  }
-
-  async function handleDrop(target: CombinedTodo) {
-    if (!dragTodo) return;
-    if (dragTodo.source === "global" && target.source === "global") {
-      await reorderGlobalTodos(dragTodo.id, target.id);
-    }
-    if (dragTodo.source === "trip" && target.source === "trip") {
-      await reorderTripTodos(dragTodo, target);
-    }
-    setDragTodo(null);
+    const currentOrder = typeof current.order === "number" ? current.order : base + index;
+    const targetOrder = typeof target.order === "number" ? target.order : base + targetIndex;
+    await Promise.all([
+      updateDoc(doc(db, "wishlist", current.id), { order: targetOrder }),
+      updateDoc(doc(db, "wishlist", target.id), { order: currentOrder }),
+    ]);
   }
 
   async function enablePushReminders() {
@@ -721,6 +686,7 @@ export default function HomePage() {
       text: wishText,
       done: false,
       createdAt: new Date().toISOString(),
+      order: Date.now(),
     });
     setShowModal(false);
     resetModalInputs();
@@ -810,7 +776,17 @@ export default function HomePage() {
     { id: "mint", label: "Mint", color: "#10b981" },
     { id: "ocean", label: "Ocean", color: "#0ea5e9" },
     { id: "sunset", label: "Sunset", color: "#f97316" },
+    { id: "aurora", label: "Aurora", color: "#22d3ee" },
+    { id: "berry", label: "Berry", color: "#fb7185" },
+    { id: "citrus", label: "Citrus", color: "#facc15" },
   ] as const;
+  const activePreset = presetOptions.find((option) => option.id === preset);
+  const cyclePreset = () => {
+    const ids = presetOptions.map((option) => option.id);
+    const index = ids.indexOf(preset);
+    const nextPreset = ids[(index + 1) % ids.length];
+    setPreset(nextPreset);
+  };
   const recurrenceSummary = (recurrence?: RecurrenceType) => {
     if (!recurrence || recurrence === "none") return strings.labels.repeatNone;
     if (recurrence === "daily") return strings.labels.repeatDaily;
@@ -874,6 +850,14 @@ export default function HomePage() {
                   title={strings.actions.toggleTheme}
                 >
                   {theme === "day" ? <Moon size={18} /> : <Sun size={18} />}
+                </button>
+                <button
+                  className="mini-nav"
+                  onClick={cyclePreset}
+                  aria-label={`${strings.labels.themePresets}: ${activePreset?.label ?? preset}`}
+                  title={`${strings.labels.themePresets}: ${activePreset?.label ?? preset}`}
+                >
+                  <Palette size={18} />
                 </button>
               </div>
             </div>
@@ -940,6 +924,14 @@ export default function HomePage() {
               title={strings.actions.toggleTheme}
             >
               {theme === "day" ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <button
+              className="mini-nav"
+              onClick={cyclePreset}
+              aria-label={`${strings.labels.themePresets}: ${activePreset?.label ?? preset}`}
+              title={`${strings.labels.themePresets}: ${activePreset?.label ?? preset}`}
+            >
+              <Palette size={18} />
             </button>
           </div>
         </div>
@@ -1148,11 +1140,6 @@ export default function HomePage() {
                       onKeyDown={handleKeyActivate(() =>
                         isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo)
                       )}
-                      draggable
-                      onDragStart={() => handleDragStart(todo)}
-                      onDragEnd={() => setDragTodo(null)}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={() => handleDrop(todo)}
                       className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
                       role="button"
                       tabIndex={0}
@@ -1249,43 +1236,6 @@ export default function HomePage() {
                   </div>
                 </div>
               )}
-            </div>
-
-            <div className="card-cute">
-              <div className="flex items-center justify-between mb-3">
-                <span className="badge badge-pink">
-                  <CheckSquare size={14} />
-                  {strings.labels.progress}
-                </span>
-                <span className="text-xs text-cute-muted">
-                  {completedForDate}/{filteredTodosForDate.length || 0} {strings.labels.completed}
-                </span>
-              </div>
-              <div className="progress-track">
-                <div className="progress-bar" style={{ width: `${progressPercent}%` }} />
-              </div>
-              <p className="text-xs text-cute-muted mt-2">{progressPercent}%</p>
-            </div>
-
-            <div className="card-cute">
-              <div className="flex items-center justify-between mb-3">
-                <span className="badge badge-purple">{strings.labels.themePresets}</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {presetOptions.map((option) => (
-                  <button
-                    key={option.id}
-                    className="preset-pill"
-                    onClick={() => setPreset(option.id)}
-                    style={{
-                      borderColor: preset === option.id ? option.color : "rgba(255, 255, 255, 0.6)",
-                    }}
-                  >
-                    <span className="preset-dot" style={{ background: option.color }} />
-                    {option.label}
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div className="card-cute">
@@ -1455,11 +1405,6 @@ export default function HomePage() {
                     onKeyDown={handleKeyActivate(() =>
                       isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo)
                     )}
-                    draggable
-                    onDragStart={() => handleDragStart(todo)}
-                    onDragEnd={() => setDragTodo(null)}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={() => handleDrop(todo)}
                     role="button"
                     tabIndex={0}
                   >
@@ -1543,6 +1488,30 @@ export default function HomePage() {
                   </div>
 
                   <div className="flex items-center gap-1">
+                    <button
+                      className="icon-btn disabled:opacity-40"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveWishlistItem(w.id, -1);
+                      }}
+                      aria-label={strings.actions.moveUp}
+                      title={strings.actions.moveUp}
+                      disabled={wishlistOrdered[0]?.id === w.id}
+                    >
+                      <ArrowUp size={18} />
+                    </button>
+                    <button
+                      className="icon-btn disabled:opacity-40"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveWishlistItem(w.id, 1);
+                      }}
+                      aria-label={strings.actions.moveDown}
+                      title={strings.actions.moveDown}
+                      disabled={wishlistOrdered[wishlistOrdered.length - 1]?.id === w.id}
+                    >
+                      <ArrowDown size={18} />
+                    </button>
                     <button
                       className="icon-btn"
                       onClick={(e) => {

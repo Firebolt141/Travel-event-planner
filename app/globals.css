@@ -47,6 +47,15 @@ html[data-preset="ocean"] {
 html[data-preset="sunset"] {
   --cute-accent: #f97316;
 }
+html[data-preset="aurora"] {
+  --cute-accent: #22d3ee;
+}
+html[data-preset="berry"] {
+  --cute-accent: #fb7185;
+}
+html[data-preset="citrus"] {
+  --cute-accent: #facc15;
+}
 
 /* =============== Pull-to-refresh enabled =============== */
 
