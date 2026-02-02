@@ -357,6 +357,10 @@ export default function HomePage() {
   const wishlistSoon = useMemo(() => {
     return wishlistOrdered.slice(0, 10);
   }, [wishlistOrdered]);
+  const activeWishlistCount = useMemo(
+    () => wishlistOrdered.filter((item) => !item.done).length,
+    [wishlistOrdered]
+  );
 
   const todaysTodos = (() => {
     const forToday = (globalTodos || []).filter((t) => t.dueDate === todayStr);
@@ -1408,7 +1412,7 @@ export default function HomePage() {
                   <Heart size={14} />
                   {strings.labels.wishlist}
                 </span>
-                <span className="text-xs text-cute-muted">{countLabel(wishlist.length, "items")}</span>
+                <span className="text-xs text-cute-muted">{countLabel(activeWishlistCount, "items")}</span>
               </div>
             </div>
 
