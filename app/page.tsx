@@ -328,6 +328,11 @@ export default function HomePage() {
     all.sort(compareTodos);
     return all.slice(0, 10);
   }, [globalTodos]);
+  const activeTodoCount = useMemo(() => {
+    const tripTodosActive = (trips || []).flatMap((trip) => trip.todos || []).filter((todo) => !todo.done).length;
+    const globalTodosActive = (globalTodos || []).filter((todo) => !todo.done).length;
+    return tripTodosActive + globalTodosActive;
+  }, [globalTodos, trips]);
 
   const eventsSoon = useMemo(() => {
     const sorted = [...(events || [])].sort((a, b) => String(a.startDate || "").localeCompare(String(b.startDate || "")));
@@ -1310,7 +1315,7 @@ export default function HomePage() {
                   <CheckSquare size={14} />
                   {strings.labels.todos}
                 </span>
-                <span className="text-xs text-cute-muted">{strings.labels.globalTripDeadlines}</span>
+                <span className="text-xs text-cute-muted">{countLabel(activeTodoCount, "tasks")}</span>
               </div>
             </div>
 
