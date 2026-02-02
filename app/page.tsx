@@ -574,6 +574,20 @@ export default function HomePage() {
     });
   }
 
+  async function deleteTripTodo(todo: TripTodoWithSource) {
+    await updateDoc(doc(db, "trips", todo.tripId), {
+      todos: arrayRemove(baseTripTodo(todo)),
+    });
+  }
+
+  function toggleCombinedTodo(todo: CombinedTodo) {
+    if (todo.source === "global") {
+      toggleGlobalTodo(todo);
+    } else {
+      toggleTripTodo(todo);
+    }
+  }
+
   async function updateTripTodo() {
     if (!editTripId || !editTripTodoOriginal) return;
     const updatedTodo = {
@@ -1055,10 +1069,8 @@ export default function HomePage() {
                           ? `${todo.source}-${todo.id}-${todo.text}-${i}`
                           : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
                       }
-                      onClick={() => (isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo))}
-                      onKeyDown={handleKeyActivate(() =>
-                        isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo)
-                      )}
+                      onClick={() => toggleCombinedTodo(todo)}
+                      onKeyDown={handleKeyActivate(() => toggleCombinedTodo(todo))}
                       className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
                       role="button"
                       tabIndex={0}
@@ -1080,15 +1092,18 @@ export default function HomePage() {
                             className="icon-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (isGlobal) openEditTodo(todo);
-                              else openEditTripTodo(todo);
+                              if (todo.source === "global") {
+                                openEditTodo(todo);
+                              } else {
+                                openEditTripTodo(todo);
+                              }
                             }}
                             aria-label={strings.actions.editTodo}
                             title={strings.actions.editTodo}
                           >
                             <Pencil size={18} />
                           </button>
-                          {isGlobal ? (
+                          {todo.source === "global" ? (
                             <button
                               className="icon-btn"
                               onClick={(e) => {
@@ -1100,7 +1115,19 @@ export default function HomePage() {
                             >
                               <Trash2 size={18} />
                             </button>
-                          ) : null}
+                          ) : (
+                            <button
+                              className="icon-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteTripTodo(todo);
+                              }}
+                              aria-label={strings.actions.deleteTodo}
+                              title={strings.actions.deleteTodo}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1296,24 +1323,11 @@ export default function HomePage() {
                         : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
                     }
                     className={`row-cute ${todo.done ? "opacity-80" : ""}`}
-                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo))}
-                    onKeyDown={handleKeyActivate(() =>
-                      isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo)
-                    )}
+                    onClick={() => toggleCombinedTodo(todo)}
+                    onKeyDown={handleKeyActivate(() => toggleCombinedTodo(todo))}
                     role="button"
                     tabIndex={0}
                   >
-                    <button
-                      className="icon-btn"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        toggleGlobalTodo(todo);
-                      }}
-                      aria-label={todo.done ? strings.actions.undo : strings.actions.done}
-                      title={todo.done ? strings.actions.undo : strings.actions.done}
-                    >
-                      <CheckSquare size={16} />
-                    </button>
                     <div className="min-w-0">
                       <p className={`font-semibold truncate ${todo.done ? "line-through text-cute-muted" : ""}`}>{todo.text}</p>
                       <p className="text-xs text-cute-muted mt-1">
@@ -1330,15 +1344,18 @@ export default function HomePage() {
                         className="icon-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (isGlobal) openEditTodo(todo);
-                          else openEditTripTodo(todo);
+                          if (todo.source === "global") {
+                            openEditTodo(todo);
+                          } else {
+                            openEditTripTodo(todo);
+                          }
                         }}
                         aria-label={strings.actions.editTodo}
                         title={strings.actions.editTodo}
                       >
                         <Pencil size={18} />
                       </button>
-                      {isGlobal ? (
+                      {todo.source === "global" ? (
                         <button
                           className="icon-btn"
                           onClick={(e) => {
@@ -1350,7 +1367,19 @@ export default function HomePage() {
                         >
                           <Trash2 size={18} />
                         </button>
-                      ) : null}
+                      ) : (
+                        <button
+                          className="icon-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteTripTodo(todo);
+                          }}
+                          aria-label={strings.actions.deleteTodo}
+                          title={strings.actions.deleteTodo}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

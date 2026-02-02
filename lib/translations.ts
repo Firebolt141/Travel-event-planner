@@ -116,6 +116,8 @@ export const translations: Record<
       switchToEnglish: string;
       previousMonth: string;
       nextMonth: string;
+      undo: string;
+      done: string;
       add: string;
       delete: string;
       deleteEvent: string;
@@ -249,6 +251,8 @@ export const translations: Record<
       switchToEnglish: "Switch to English",
       previousMonth: "Previous month",
       nextMonth: "Next month",
+      undo: "Undo",
+      done: "Mark as done",
       add: "Add",
       delete: "Delete",
       deleteEvent: "Delete event",
@@ -390,6 +394,8 @@ export const translations: Record<
       switchToEnglish: "英語に切替",
       previousMonth: "前の月",
       nextMonth: "次の月",
+      undo: "元に戻す",
+      done: "完了にする",
       add: "追加",
       delete: "削除",
       deleteEvent: "イベントを削除",
