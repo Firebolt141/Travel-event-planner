@@ -8,13 +8,21 @@ const storageKey = "asuka_lang";
 export function useLanguage() {
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window === "undefined") return "en";
-    const stored = window.localStorage.getItem(storageKey);
-    return stored === "ja" || stored === "en" ? stored : "en";
+    try {
+      const stored = window.localStorage.getItem(storageKey);
+      return stored === "ja" || stored === "en" ? stored : "en";
+    } catch {
+      return "en";
+    }
   });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(storageKey, language);
+    try {
+      window.localStorage.setItem(storageKey, language);
+    } catch {
+      // ignore storage errors
+    }
     document.documentElement.lang = language === "ja" ? "ja" : "en";
   }, [language]);
 

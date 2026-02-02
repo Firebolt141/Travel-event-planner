@@ -72,6 +72,16 @@ export const translations: Record<
       weatherMin: string;
       weatherMax: string;
       weatherUpdated: string;
+      progress: string;
+      completed: string;
+      calendarFilters: string;
+      themePresets: string;
+      repeat: string;
+      repeatNone: string;
+      repeatDaily: string;
+      repeatWeekly: string;
+      repeatMonthly: string;
+      repeatYearly: string;
     };
     messages: {
       welcomeBack: string;
@@ -115,7 +125,10 @@ export const translations: Record<
       editTodo: string;
       editWishlist: string;
       saveChanges: string;
+      moveUp: string;
+      moveDown: string;
       removeParticipant: string;
+      createNextTrip: string;
       back: string;
     };
     daysShort: string[];
@@ -192,6 +205,16 @@ export const translations: Record<
       weatherMin: "Min",
       weatherMax: "Max",
       weatherUpdated: "Updated",
+      progress: "Progress",
+      completed: "Completed",
+      calendarFilters: "Calendar filters",
+      themePresets: "Theme presets",
+      repeat: "Repeat",
+      repeatNone: "No repeat",
+      repeatDaily: "Daily",
+      repeatWeekly: "Weekly",
+      repeatMonthly: "Monthly",
+      repeatYearly: "Yearly",
     },
     messages: {
       welcomeBack: "Welcome back",
@@ -235,7 +258,10 @@ export const translations: Record<
       editTodo: "Edit todo",
       editWishlist: "Edit wishlist item",
       saveChanges: "Save changes",
+      moveUp: "Move up",
+      moveDown: "Move down",
       removeParticipant: "Remove participant",
+      createNextTrip: "Create next trip",
       back: "Back",
     },
     daysShort: ["S", "M", "T", "W", "T", "F", "S"],
@@ -320,6 +346,16 @@ export const translations: Record<
       weatherMin: "最低",
       weatherMax: "最高",
       weatherUpdated: "更新",
+      progress: "進捗",
+      completed: "完了",
+      calendarFilters: "カレンダー表示",
+      themePresets: "テーマ",
+      repeat: "繰り返し",
+      repeatNone: "繰り返しなし",
+      repeatDaily: "毎日",
+      repeatWeekly: "毎週",
+      repeatMonthly: "毎月",
+      repeatYearly: "毎年",
     },
     messages: {
       welcomeBack: "おかえりなさい",
@@ -363,7 +399,10 @@ export const translations: Record<
       editTodo: "TODOを編集",
       editWishlist: "ウィッシュリストを編集",
       saveChanges: "変更を保存",
+      moveUp: "上へ移動",
+      moveDown: "下へ移動",
       removeParticipant: "参加者を削除",
+      createNextTrip: "次の旅行を作成",
       back: "戻る",
     },
     daysShort: ["日", "月", "火", "水", "木", "金", "土"],

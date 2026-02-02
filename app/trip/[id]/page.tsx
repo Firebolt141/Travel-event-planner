@@ -2,23 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import {
-  ArrowLeft,
-  Trash2,
-  CheckCircle2,
-  Circle,
-  Users,
-  CalendarDays,
-  Sparkles,
-  Plane,
-  MapPin,
-  Pencil,
-  Languages,
-  Moon,
-  Sun,
-} from "lucide-react";
+import { ArrowLeft, Trash2, Users, CalendarDays, Sparkles, Plane, MapPin, Languages, Moon, Sun } from "lucide-react";
 import { useLanguage } from "@/app/components/useLanguage";
 import { useTheme } from "@/app/components/ThemeClient";
 
@@ -28,11 +14,17 @@ type Participant = {
   name: string;
 };
 
-type Todo = {
-  text: string;
-  pic: string;
-  done: boolean;
-  dueDate: string;
+type CountType = "people";
+type RecurrenceType = "none" | "weekly" | "monthly" | "yearly";
+type ItemData = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  location?: string;
+  description?: string;
+  participants?: Participant[];
+  recurrence?: RecurrenceType;
 };
 type CountType = "tasks" | "people";
 type ItemData = {
@@ -57,22 +49,24 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   const { theme, toggleTheme } = useTheme();
   const countLabel = (count: number, type: CountType) =>
     language === "ja" ? `${count}${strings.labels[type]}` : `${count} ${strings.labels[type]}`;
-
+  const recurrenceSummary = (recurrence?: RecurrenceType) => {
+    if (!recurrence || recurrence === "none") return strings.labels.repeatNone;
+    if (recurrence === "weekly") return strings.labels.repeatWeekly;
+    if (recurrence === "monthly") return strings.labels.repeatMonthly;
+    return strings.labels.repeatYearly;
+  };
+  const addRecurrence = (date: Date, recurrence: RecurrenceType) => {
+    const next = new Date(date);
+    if (recurrence === "weekly") next.setDate(next.getDate() + 7);
+    if (recurrence === "monthly") next.setMonth(next.getMonth() + 1);
+    if (recurrence === "yearly") next.setFullYear(next.getFullYear() + 1);
+    return next;
+  };
   const [item, setItem] = useState<ItemData | null>(null);
   const [description, setDescription] = useState("");
 
   // Participant input
   const [pName, setPName] = useState("");
-
-  // Todo input
-  const [todoText, setTodoText] = useState("");
-  const [todoPic, setTodoPic] = useState("");
-  const [todoDue, setTodoDue] = useState("");
-  const [showEditTodo, setShowEditTodo] = useState(false);
-  const [editTodoOriginal, setEditTodoOriginal] = useState<Todo | null>(null);
-  const [editTodoText, setEditTodoText] = useState("");
-  const [editTodoPic, setEditTodoPic] = useState("");
-  const [editTodoDue, setEditTodoDue] = useState("");
 
   const collectionName = useMemo(
     () => (itemType === "event" ? "events" : "trips"),
@@ -127,41 +121,19 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
     });
   }
 
-  /* ---------------- TODOS ---------------- */
-
-  async function addTodo() {
-    if (!todoText || !todoPic || !todoDue) return;
-
-    const newTodo: Todo = {
-      text: todoText,
-      pic: todoPic,
-      done: false,
-      dueDate: todoDue,
-    };
-
-    await updateDoc(doc(db, collectionName, id), {
-      todos: arrayUnion(newTodo),
-    });
-
-    setTodoText("");
-    setTodoPic("");
-    setTodoDue("");
-  }
-
-  async function toggleTodo(todo: Todo) {
-    // same behavior as before: remove old object, add toggled one
-    await updateDoc(doc(db, collectionName, id), {
-      todos: arrayRemove(todo),
-    });
-
-    await updateDoc(doc(db, collectionName, id), {
-      todos: arrayUnion({ ...todo, done: !todo.done }),
-    });
-  }
-
-  async function deleteTodo(todo: Todo) {
-    await updateDoc(doc(db, collectionName, id), {
-      todos: arrayRemove(todo),
+  async function createNextTripOccurrence() {
+    if (itemType !== "trip") return;
+    if (!item?.recurrence || item.recurrence === "none") return;
+    const start = new Date(`${item.startDate}T00:00:00`);
+    const end = new Date(`${item.endDate}T00:00:00`);
+    const nextStart = addRecurrence(start, item.recurrence);
+    const nextEnd = addRecurrence(end, item.recurrence);
+    await addDoc(collection(db, "trips"), {
+      name: item.name,
+      startDate: nextStart.toISOString().slice(0, 10),
+      endDate: nextEnd.toISOString().slice(0, 10),
+      participants: item.participants || [],
+      recurrence: item.recurrence,
     });
   }
 
@@ -269,6 +241,23 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
           <p className="mt-3 font-semibold">
             {item.startDate} → {item.endDate}
           </p>
+          {itemType === "trip" ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <p className="text-xs text-cute-muted">
+                {strings.labels.repeat}: {recurrenceSummary(item.recurrence)}
+              </p>
+              {item.recurrence && item.recurrence !== "none" ? (
+                <button
+                  className="mini-nav"
+                  onClick={createNextTripOccurrence}
+                  aria-label={strings.actions.createNextTrip}
+                  title={strings.actions.createNextTrip}
+                >
+                  +
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
           {/* Optional: show location on event if present (won't break trips) */}
           {isEvent && item.location ? (
@@ -344,121 +333,6 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
           </button>
         </div>
 
-        {/* TODOs */}
-        <div className="card-cute">
-          <div className="flex items-center justify-between mb-3">
-            <span className="badge badge-pink">
-              <Circle size={14} />
-              {strings.labels.todos}
-            </span>
-            <span className="text-xs text-cute-muted">
-              {countLabel((item.todos || []).length, "tasks")}
-            </span>
-          </div>
-
-          <div className="space-y-2 mb-4">
-            {(item.todos || []).map((todo: Todo, i: number) => (
-              <div key={i} className="row-cute">
-                <div
-                  className="flex items-start gap-3 flex-1 cursor-pointer"
-                  onClick={() => toggleTodo(todo)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  {todo.done ? (
-                    <CheckCircle2 className="mt-0.5" />
-                  ) : (
-                    <Circle className="mt-0.5 opacity-70" />
-                  )}
-
-                  <div className="min-w-0">
-                    <p
-                      className={`font-semibold truncate ${
-                        todo.done ? "line-through text-cute-muted" : ""
-                      }`}
-                    >
-                      {todo.text}
-                    </p>
-                    <p className="text-xs text-cute-muted mt-1">
-                      {strings.labels.pic}: {todo.pic} • {strings.labels.due}: {todo.dueDate}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    className="icon-btn"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openEditTodo(todo);
-                    }}
-                    aria-label={strings.actions.editTodo}
-                    title={strings.actions.editTodo}
-                  >
-                    <Pencil size={18} />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      deleteTodo(todo);
-                    }}
-                    aria-label={strings.actions.deleteTodo}
-                    title={strings.actions.deleteTodo}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {(item.todos || []).length === 0 && (
-              <p className="text-sm text-cute-muted">{strings.messages.noTripTodos}</p>
-            )}
-          </div>
-
-          <input
-            placeholder={strings.labels.task}
-            value={todoText}
-            onChange={(e) => setTodoText(e.target.value)}
-            className="cute-input mb-2"
-          />
-
-          <select
-            value={todoPic}
-            onChange={(e) => setTodoPic(e.target.value)}
-            disabled={(item.participants || []).length === 0}
-            className="cute-input mb-2"
-          >
-            <option value="">{strings.labels.assignPic}</option>
-            {(item.participants || []).map((p: Participant, i: number) => (
-              <option key={i} value={p.name}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            value={todoDue}
-            onChange={(e) => setTodoDue(e.target.value)}
-            className="cute-input mb-3"
-          />
-
-          <button
-            onClick={addTodo}
-            className="w-full py-3 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-            disabled={!todoText || !todoPic || !todoDue}
-          >
-            {strings.labels.addTodo}
-          </button>
-
-          {(item.participants || []).length === 0 && (
-            <p className="text-xs text-cute-muted mt-2">
-              {strings.messages.addAtLeastOneParticipant}
-            </p>
-          )}
-        </div>
       </main>
 
       {showEditTodo && (
