@@ -574,6 +574,12 @@ export default function HomePage() {
     });
   }
 
+  async function deleteTripTodo(todo: TripTodoWithSource) {
+    await updateDoc(doc(db, "trips", todo.tripId), {
+      todos: arrayRemove(baseTripTodo(todo)),
+    });
+  }
+
   function toggleCombinedTodo(todo: CombinedTodo) {
     if (todo.source === "global") {
       toggleGlobalTodo(todo);
@@ -1097,7 +1103,7 @@ export default function HomePage() {
                           >
                             <Pencil size={18} />
                           </button>
-                          {isGlobal ? (
+                          {todo.source === "global" ? (
                             <button
                               className="icon-btn"
                               onClick={(e) => {
@@ -1105,6 +1111,18 @@ export default function HomePage() {
                                 if (todo.source === "global") {
                                   deleteGlobalTodo(todo);
                                 }
+                              }}
+                              aria-label={strings.actions.deleteTodo}
+                              title={strings.actions.deleteTodo}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          ) : (
+                            <button
+                              className="icon-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteTripTodo(todo);
                               }}
                               aria-label={strings.actions.deleteTodo}
                               title={strings.actions.deleteTodo}
@@ -1312,19 +1330,6 @@ export default function HomePage() {
                     role="button"
                     tabIndex={0}
                   >
-                    <button
-                      className="icon-btn"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (todo.source === "global") {
-                          toggleGlobalTodo(todo);
-                        }
-                      }}
-                      aria-label={todo.done ? strings.actions.undo : strings.actions.done}
-                      title={todo.done ? strings.actions.undo : strings.actions.done}
-                    >
-                      <CheckSquare size={16} />
-                    </button>
                     <div className="min-w-0">
                       <p className={`font-semibold truncate ${todo.done ? "line-through text-cute-muted" : ""}`}>{todo.text}</p>
                       <p className="text-xs text-cute-muted mt-1">
@@ -1352,7 +1357,7 @@ export default function HomePage() {
                       >
                         <Pencil size={18} />
                       </button>
-                      {isGlobal ? (
+                      {todo.source === "global" ? (
                         <button
                           className="icon-btn"
                           onClick={(e) => {
@@ -1371,9 +1376,7 @@ export default function HomePage() {
                           className="icon-btn"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (todo.source === "trip") {
-                              deleteTripTodo(todo);
-                            }
+                            deleteTripTodo(todo);
                           }}
                           aria-label={strings.actions.deleteTodo}
                           title={strings.actions.deleteTodo}
