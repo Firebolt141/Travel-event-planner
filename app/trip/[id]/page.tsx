@@ -14,7 +14,15 @@ type Participant = {
   name: string;
 };
 
-type CountType = "people";
+type Todo = {
+  text: string;
+  pic: string;
+  done: boolean;
+  dueDate: string;
+  order?: number;
+};
+
+type CountType = "tasks" | "people";
 type RecurrenceType = "none" | "weekly" | "monthly" | "yearly";
 type ItemData = {
   id: string;
@@ -25,16 +33,6 @@ type ItemData = {
   description?: string;
   participants?: Participant[];
   recurrence?: RecurrenceType;
-};
-type CountType = "tasks" | "people";
-type ItemData = {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  location?: string;
-  description?: string;
-  participants?: Participant[];
   todos?: Todo[];
 };
 
@@ -64,6 +62,11 @@ export default function TripDetailPage({ type }: { type?: "trip" | "event" }) {
   };
   const [item, setItem] = useState<ItemData | null>(null);
   const [description, setDescription] = useState("");
+  const [showEditTodo, setShowEditTodo] = useState(false);
+  const [editTodoOriginal, setEditTodoOriginal] = useState<Todo | null>(null);
+  const [editTodoText, setEditTodoText] = useState("");
+  const [editTodoPic, setEditTodoPic] = useState("");
+  const [editTodoDue, setEditTodoDue] = useState("");
 
   // Participant input
   const [pName, setPName] = useState("");
