@@ -82,9 +82,6 @@ export const translations: Record<
       repeatWeekly: string;
       repeatMonthly: string;
       repeatYearly: string;
-      reminders: string;
-      enableReminders: string;
-      reminderTime: string;
     };
     messages: {
       welcomeBack: string;
@@ -111,11 +108,6 @@ export const translations: Record<
       tripDetails: string;
       weatherLoading: string;
       weatherError: string;
-      remindersEnabled: string;
-      remindersDenied: string;
-      remindersUnsupported: string;
-      remindersMissingKey: string;
-      remindersSignIn: string;
     };
     actions: {
       seeYouLater: string;
@@ -223,9 +215,6 @@ export const translations: Record<
       repeatWeekly: "Weekly",
       repeatMonthly: "Monthly",
       repeatYearly: "Yearly",
-      reminders: "Reminders",
-      enableReminders: "Enable reminders",
-      reminderTime: "Reminder time",
     },
     messages: {
       welcomeBack: "Welcome back",
@@ -252,11 +241,6 @@ export const translations: Record<
       tripDetails: "Trip details",
       weatherLoading: "Fetching live weather…",
       weatherError: "Weather unavailable right now.",
-      remindersEnabled: "Push reminders enabled!",
-      remindersDenied: "Notifications are blocked in your browser settings.",
-      remindersUnsupported: "Push notifications aren’t supported in this browser.",
-      remindersMissingKey: "FCM VAPID key missing. Add NEXT_PUBLIC_FCM_VAPID_KEY.",
-      remindersSignIn: "Push reminders require a signed-in account (demo mode doesn’t support it yet).",
     },
     actions: {
       seeYouLater: "See you later",
@@ -372,9 +356,6 @@ export const translations: Record<
       repeatWeekly: "毎週",
       repeatMonthly: "毎月",
       repeatYearly: "毎年",
-      reminders: "リマインダー",
-      enableReminders: "リマインダーを有効化",
-      reminderTime: "リマインダー時間",
     },
     messages: {
       welcomeBack: "おかえりなさい",
@@ -401,11 +382,6 @@ export const translations: Record<
       tripDetails: "旅行詳細",
       weatherLoading: "天気を取得中…",
       weatherError: "天気を取得できません。",
-      remindersEnabled: "プッシュ通知を有効にしました！",
-      remindersDenied: "ブラウザで通知がブロックされています。",
-      remindersUnsupported: "このブラウザは通知に対応していません。",
-      remindersMissingKey: "FCMのVAPIDキーが未設定です。",
-      remindersSignIn: "通知にはログインが必要です（デモは未対応）。",
     },
     actions: {
       seeYouLater: "またね",

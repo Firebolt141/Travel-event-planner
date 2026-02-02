@@ -37,7 +37,6 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
-import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 import { useRouter } from "next/navigation";
 import { useTheme } from "./components/ThemeClient";
 import { useLanguage } from "./components/useLanguage";
@@ -64,8 +63,6 @@ type GlobalTodo = {
   done: boolean;
   order?: number;
   recurrence?: RecurrenceType;
-  reminderAt?: string;
-  reminderEnabled?: boolean;
   createdAt?: string;
 };
 type WishlistItem = {
@@ -215,8 +212,6 @@ export default function HomePage() {
   const [todoDue, setTodoDue] = useState("");
   const [todoPic, setTodoPic] = useState("");
   const [todoRecurrence, setTodoRecurrence] = useState<RecurrenceType>("none");
-  const [todoReminderEnabled, setTodoReminderEnabled] = useState(false);
-  const [todoReminderAt, setTodoReminderAt] = useState("");
 
   const [wishText, setWishText] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
@@ -226,11 +221,8 @@ export default function HomePage() {
   const [editDue, setEditDue] = useState("");
   const [editPic, setEditPic] = useState("");
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceType>("none");
-  const [editReminderEnabled, setEditReminderEnabled] = useState(false);
-  const [editReminderAt, setEditReminderAt] = useState("");
   const [editTripId, setEditTripId] = useState<string | null>(null);
   const [editTripTodoOriginal, setEditTripTodoOriginal] = useState<TripTodoWithSource | null>(null);
-  const [reminderMessage, setReminderMessage] = useState("");
 
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimer = useRef<number | null>(null);
@@ -276,30 +268,6 @@ export default function HomePage() {
     };
   }, []);
 
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    const setupMessaging = async () => {
-      if (typeof window === "undefined") return;
-      const supported = await isSupported();
-      if (!supported) {
-        return;
-      }
-      const messaging = getMessaging();
-      unsubscribe = onMessage(messaging, (payload) => {
-        if (!payload.notification?.title) return;
-        if (typeof Notification === "undefined") return;
-        if (Notification.permission !== "granted") return;
-        new Notification(payload.notification.title, {
-          body: payload.notification.body,
-        });
-      });
-    };
-    setupMessaging();
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, []);
-
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
@@ -313,12 +281,17 @@ export default function HomePage() {
     if (typeof todo.order === "number") return todo.order;
     return Number.isNaN(Date.parse(todo.dueDate)) ? 0 : Date.parse(todo.dueDate);
   };
+  const compareTodos = (a: { done: boolean; order?: number; dueDate: string }, b: { done: boolean; order?: number; dueDate: string }) => {
+    const status = Number(a.done) - Number(b.done);
+    if (status !== 0) return status;
+    return todoOrderValue(a) - todoOrderValue(b);
+  };
 
   const tripTodosForDate = useMemo<TripTodoWithSource[]>(() => {
     return (trips || []).flatMap((trip) =>
       (trip.todos || [])
         .filter((todo) => todo.dueDate === selectedDate)
-        .sort((a, b) => todoOrderValue(a) - todoOrderValue(b))
+        .sort(compareTodos)
         .map((todo) => ({
           ...todo,
           source: "trip" as const,
@@ -331,18 +304,18 @@ export default function HomePage() {
   const globalTodosForDate = useMemo<GlobalTodoWithSource[]>(() => {
     return (globalTodos || [])
       .filter((t) => t.dueDate === selectedDate)
-      .sort((a, b) => todoOrderValue(a) - todoOrderValue(b))
+      .sort(compareTodos)
       .map((t) => ({ ...t, source: "global" as const }));
   }, [globalTodos, selectedDate]);
 
   const todosForDateCombined = useMemo<CombinedTodo[]>(() => {
-    return [...globalTodosForDate, ...tripTodosForDate];
+    return [...globalTodosForDate, ...tripTodosForDate].sort(compareTodos);
   }, [globalTodosForDate, tripTodosForDate]);
 
   const todosSoon = useMemo<CombinedTodo[]>(() => {
     const fromTrips = (trips || []).flatMap((trip) =>
       (trip.todos || [])
-        .sort((a, b) => todoOrderValue(a) - todoOrderValue(b))
+        .sort(compareTodos)
         .map((todo) => ({
           ...todo,
           source: "trip" as const,
@@ -352,7 +325,7 @@ export default function HomePage() {
     );
     const fromGlobal = (globalTodos || []).map((t) => ({ ...t, source: "global" as const }));
     const all: CombinedTodo[] = [...fromGlobal, ...fromTrips];
-    all.sort((a, b) => todoOrderValue(a) - todoOrderValue(b));
+    all.sort(compareTodos);
     return all.slice(0, 10);
   }, [trips, globalTodos]);
 
@@ -392,7 +365,6 @@ export default function HomePage() {
   const tripsForDate = showTripDots
     ? trips.filter((t) => isDateInRange(selectedDate, t.startDate, t.endDate))
     : [];
-  const canEnableReminders = user && "uid" in user;
 
   useEffect(() => {
     if (!todayAllDone) return;
@@ -497,8 +469,6 @@ export default function HomePage() {
     setTodoDue("");
     setTodoPic("");
     setTodoRecurrence("none");
-    setTodoReminderEnabled(false);
-    setTodoReminderAt("");
     setWishText("");
     setCreateMode("pick");
     setShowEditModal(false);
@@ -508,8 +478,6 @@ export default function HomePage() {
     setEditDue("");
     setEditPic("");
     setEditRecurrence("none");
-    setEditReminderEnabled(false);
-    setEditReminderAt("");
     setEditTripId(null);
     setEditTripTodoOriginal(null);
   }
@@ -550,8 +518,6 @@ export default function HomePage() {
       done: false,
       order: Date.now(),
       recurrence: todoRecurrence,
-      reminderEnabled: todoReminderEnabled,
-      reminderAt: todoReminderEnabled ? todoReminderAt : "",
       createdAt: new Date().toISOString(),
     });
     setShowModal(false);
@@ -564,7 +530,6 @@ export default function HomePage() {
     if (nextDone && todo.recurrence && todo.recurrence !== "none") {
       const dueDate = new Date(`${todo.dueDate}T00:00:00`);
       const nextDue = addRecurrence(dueDate, todo.recurrence);
-      const nextReminder = todo.reminderAt ? addRecurrence(new Date(todo.reminderAt), todo.recurrence) : null;
       await addDoc(collection(db, "todos"), {
         text: todo.text,
         dueDate: toDateInput(nextDue),
@@ -572,8 +537,6 @@ export default function HomePage() {
         done: false,
         order: Date.now(),
         recurrence: todo.recurrence,
-        reminderEnabled: todo.reminderEnabled ?? false,
-        reminderAt: todo.reminderEnabled && nextReminder ? toDateTimeInput(nextReminder) : "",
         createdAt: new Date().toISOString(),
       });
     }
@@ -588,8 +551,6 @@ export default function HomePage() {
       dueDate: editDue,
       pic: editPic.trim(),
       recurrence: editRecurrence,
-      reminderEnabled: editReminderEnabled,
-      reminderAt: editReminderEnabled ? editReminderAt : "",
     });
   }
 
@@ -646,40 +607,6 @@ export default function HomePage() {
     ]);
   }
 
-  async function enablePushReminders() {
-    if (typeof window === "undefined") return;
-    if (!("Notification" in window)) {
-      setReminderMessage(strings.messages.remindersUnsupported);
-      return;
-    }
-    const vapidKey = process.env.NEXT_PUBLIC_FCM_VAPID_KEY;
-    if (!vapidKey) {
-      setReminderMessage(strings.messages.remindersMissingKey);
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      setReminderMessage(strings.messages.remindersDenied);
-      return;
-    }
-    const supported = await isSupported();
-    if (!supported) {
-      setReminderMessage(strings.messages.remindersUnsupported);
-      return;
-    }
-    if (!("serviceWorker" in navigator)) {
-      setReminderMessage(strings.messages.remindersUnsupported);
-      return;
-    }
-    await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-    const messaging = getMessaging();
-    const token = await getToken(messaging, { vapidKey });
-    if (token && user && "uid" in user) {
-      await setDoc(doc(db, "users", user.uid), { fcmToken: token }, { merge: true });
-    }
-    setReminderMessage(strings.messages.remindersEnabled);
-  }
-
   async function createWishlistItem() {
     if (!wishText) return;
     await addDoc(collection(db, "wishlist"), {
@@ -710,8 +637,6 @@ export default function HomePage() {
     setEditDue(todo.dueDate);
     setEditPic(todo.pic ?? "");
     setEditRecurrence(todo.recurrence ?? "none");
-    setEditReminderEnabled(todo.reminderEnabled ?? false);
-    setEditReminderAt(todo.reminderAt ?? "");
     setShowEditModal(true);
   }
 
@@ -724,8 +649,6 @@ export default function HomePage() {
     setEditDue(todo.dueDate);
     setEditPic(todo.pic);
     setEditRecurrence("none");
-    setEditReminderEnabled(false);
-    setEditReminderAt("");
     setShowEditModal(true);
   }
 
@@ -736,8 +659,6 @@ export default function HomePage() {
     setEditDue("");
     setEditPic("");
     setEditRecurrence("none");
-    setEditReminderEnabled(false);
-    setEditReminderAt("");
     setShowEditModal(true);
   }
 
@@ -803,8 +724,6 @@ export default function HomePage() {
     setEditDue("");
     setEditPic("");
     setEditRecurrence("none");
-    setEditReminderEnabled(false);
-    setEditReminderAt("");
   }
 
   const activeTodo = editType === "todo" ? globalTodos.find((todo) => todo.id === editId) : null;
@@ -1151,11 +1070,7 @@ export default function HomePage() {
                             {isGlobal
                               ? `${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}${
                                   todo.pic ? ` • ${strings.labels.pic}: ${todo.pic}` : ""
-                                } • ${strings.labels.repeat}: ${recurrenceSummary(todo.recurrence)}${
-                                  todo.reminderEnabled && todo.reminderAt
-                                    ? ` • ${strings.labels.reminderTime}: ${todo.reminderAt}`
-                                    : ""
-                                }`
+                                } • ${strings.labels.repeat}: ${recurrenceSummary(todo.recurrence)}`
                               : `${todo.tripName} • ${strings.labels.pic}: ${todo.pic}`}
                           </p>
                         </div>
@@ -1238,26 +1153,6 @@ export default function HomePage() {
               )}
             </div>
 
-            <div className="card-cute">
-              <div className="flex items-center justify-between mb-3">
-                <span className="badge badge-sun">{strings.labels.reminders}</span>
-              </div>
-              {canEnableReminders ? (
-                <>
-                  <button
-                    className="w-full py-3 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition"
-                    onClick={enablePushReminders}
-                  >
-                    {strings.labels.enableReminders}
-                  </button>
-                  {reminderMessage ? (
-                    <p className="text-xs text-cute-muted mt-2">{reminderMessage}</p>
-                  ) : null}
-                </>
-              ) : (
-                <p className="text-xs text-cute-muted">{strings.messages.remindersSignIn}</p>
-              )}
-            </div>
           </div>
         </div>
       </section>
@@ -1414,11 +1309,7 @@ export default function HomePage() {
                         {isGlobal
                           ? `${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}${
                               todo.pic ? ` • ${strings.labels.pic}: ${todo.pic}` : ""
-                            } • ${strings.labels.repeat}: ${recurrenceSummary(todo.recurrence)}${
-                              todo.reminderEnabled && todo.reminderAt
-                                ? ` • ${strings.labels.reminderTime}: ${todo.reminderAt}`
-                                : ""
-                            }`
+                            } • ${strings.labels.repeat}: ${recurrenceSummary(todo.recurrence)}`
                           : `${todo.tripName} • ${strings.labels.pic}: ${todo.pic} • ${strings.labels.due}: ${todo.dueDate}`}
                       </p>
                     </div>
@@ -1780,29 +1671,10 @@ export default function HomePage() {
                         <option value="yearly">{strings.labels.repeatYearly}</option>
                       </select>
                     </div>
-                    <label className="cute-radio">
-                      <input
-                        type="checkbox"
-                        checked={todoReminderEnabled}
-                        onChange={(e) => setTodoReminderEnabled(e.target.checked)}
-                      />
-                      <span>{strings.labels.enableReminders}</span>
-                    </label>
-                    {todoReminderEnabled ? (
-                      <div>
-                        <p className="cute-label">{strings.labels.reminderTime}</p>
-                        <input
-                          type="datetime-local"
-                          value={todoReminderAt}
-                          onChange={(e) => setTodoReminderAt(e.target.value)}
-                          className="cute-input"
-                        />
-                      </div>
-                    ) : null}
                     <button
                       onClick={createGlobalTodo}
                       className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-                      disabled={!todoText || !todoDue || (todoReminderEnabled && !todoReminderAt)}
+                      disabled={!todoText || !todoDue}
                     >
                       {strings.labels.addTodo}
                     </button>
@@ -1884,25 +1756,6 @@ export default function HomePage() {
                         <option value="yearly">{strings.labels.repeatYearly}</option>
                       </select>
                     </div>
-                    <label className="cute-radio">
-                      <input
-                        type="checkbox"
-                        checked={editReminderEnabled}
-                        onChange={(e) => setEditReminderEnabled(e.target.checked)}
-                      />
-                      <span>{strings.labels.enableReminders}</span>
-                    </label>
-                    {editReminderEnabled ? (
-                      <div>
-                        <p className="cute-label">{strings.labels.reminderTime}</p>
-                        <input
-                          type="datetime-local"
-                          value={editReminderAt}
-                          onChange={(e) => setEditReminderAt(e.target.value)}
-                          className="cute-input"
-                        />
-                      </div>
-                    ) : null}
                   </>
                 ) : null}
                 <button
@@ -1910,7 +1763,6 @@ export default function HomePage() {
                     if (!editText.trim() || !editDue) return;
                     if (editType === "todo") {
                       if (!activeTodo) return;
-                      if (editReminderEnabled && !editReminderAt) return;
                       await updateGlobalTodo(activeTodo);
                     }
                     if (editType === "tripTodo") {
@@ -1922,10 +1774,7 @@ export default function HomePage() {
                   }}
                   className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
                   disabled={
-                    !editText.trim() ||
-                    !editDue ||
-                    (editType === "tripTodo" && !editPic.trim()) ||
-                    (editType === "todo" && editReminderEnabled && !editReminderAt)
+                    !editText.trim() || !editDue || (editType === "tripTodo" && !editPic.trim())
                   }
                 >
                   {strings.actions.saveChanges}
