@@ -2,7 +2,17 @@
 
 import { startTransition, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
-import { collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, arrayRemove, arrayUnion } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  setDoc,
+  updateDoc,
+  arrayRemove,
+  arrayUnion,
+} from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import {
   Plus,
@@ -105,17 +115,6 @@ type WeatherState = {
   updatedAt: string;
 };
 type RecurrenceType = "none" | "daily" | "weekly" | "monthly" | "yearly";
-
-const todoOrderValue = (todo: { order?: number; dueDate: string }) => {
-  if (typeof todo.order === "number") return todo.order;
-  return Number.isNaN(Date.parse(todo.dueDate)) ? 0 : Date.parse(todo.dueDate);
-};
-
-const compareTodos = (a: { done: boolean; order?: number; dueDate: string }, b: { done: boolean; order?: number; dueDate: string }) => {
-  const status = Number(a.done) - Number(b.done);
-  if (status !== 0) return status;
-  return todoOrderValue(a) - todoOrderValue(b);
-};
 
 /* ---------------- DELIGHT HELPERS ---------------- */
 function seasonEmoji(monthIndex0: number) {
@@ -277,6 +276,16 @@ export default function HomePage() {
   const days: (number | null)[] = useMemo(() => {
     return [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   }, [firstDay, daysInMonth]);
+
+  const todoOrderValue = (todo: { order?: number; dueDate: string }) => {
+    if (typeof todo.order === "number") return todo.order;
+    return Number.isNaN(Date.parse(todo.dueDate)) ? 0 : Date.parse(todo.dueDate);
+  };
+  const compareTodos = (a: { done: boolean; order?: number; dueDate: string }, b: { done: boolean; order?: number; dueDate: string }) => {
+    const status = Number(a.done) - Number(b.done);
+    if (status !== 0) return status;
+    return todoOrderValue(a) - todoOrderValue(b);
+  };
 
   const tripTodosForDate = useMemo<TripTodoWithSource[]>(() => {
     return (trips || []).flatMap((trip) =>
@@ -582,12 +591,6 @@ export default function HomePage() {
     });
   }
 
-  async function deleteTripTodo(todo: TripTodoWithSource) {
-    await updateDoc(doc(db, "trips", todo.tripId), {
-      todos: arrayRemove(baseTripTodo(todo)),
-    });
-  }
-
   async function moveWishlistItem(itemId: string, direction: -1 | 1) {
     const ordered = wishlistOrdered;
     const index = ordered.findIndex((item) => item.id === itemId);
@@ -688,6 +691,7 @@ export default function HomePage() {
     return next;
   };
   const toDateInput = (date: Date) => date.toISOString().slice(0, 10);
+  const toDateTimeInput = (date: Date) => date.toISOString().slice(0, 16);
   const presetOptions = [
     { id: "lilac", label: "Lilac", color: "#7c3aed" },
     { id: "mint", label: "Mint", color: "#10b981" },
@@ -1096,19 +1100,7 @@ export default function HomePage() {
                             >
                               <Trash2 size={18} />
                             </button>
-                          ) : (
-                            <button
-                              className="icon-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteTripTodo(todo);
-                              }}
-                              aria-label={strings.actions.deleteTodo}
-                              title={strings.actions.deleteTodo}
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
@@ -1347,19 +1339,7 @@ export default function HomePage() {
                         >
                           <Trash2 size={18} />
                         </button>
-                      ) : (
-                        <button
-                          className="icon-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteTripTodo(todo);
-                          }}
-                          aria-label={strings.actions.deleteTodo}
-                          title={strings.actions.deleteTodo}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 );
