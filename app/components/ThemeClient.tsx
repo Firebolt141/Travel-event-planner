@@ -28,25 +28,45 @@ function applyPresetToHtml(preset: ThemePreset) {
 export default function ThemeClient({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     if (typeof window === "undefined") return "day";
-    const saved = localStorage.getItem("asukaTheme");
-    return saved === "night" ? "night" : "day";
+    try {
+      const saved = localStorage.getItem("asukaTheme");
+      return saved === "night" ? "night" : "day";
+    } catch {
+      return "day";
+    }
   });
   const [preset, setPresetState] = useState<ThemePreset>(() => {
     if (typeof window === "undefined") return "lilac";
-    const saved = localStorage.getItem("asukaPreset");
-    if (saved === "mint" || saved === "ocean" || saved === "sunset" || saved === "lilac") {
-      return saved;
+    try {
+      const saved = localStorage.getItem("asukaPreset");
+      if (saved === "mint" || saved === "ocean" || saved === "sunset" || saved === "lilac") {
+        return saved;
+      }
+      return "lilac";
+    } catch {
+      return "lilac";
     }
-    return "lilac";
   });
 
   // persist + apply
   useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem("asukaTheme", theme);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("asukaTheme", theme);
+      } catch {
+        // ignore storage errors
+      }
+    }
     applyThemeToHtml(theme);
   }, [theme]);
   useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem("asukaPreset", preset);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("asukaPreset", preset);
+      } catch {
+        // ignore storage errors
+      }
+    }
     applyPresetToHtml(preset);
   }, [preset]);
 

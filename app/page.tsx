@@ -284,6 +284,8 @@ export default function HomePage() {
       const messaging = getMessaging();
       unsubscribe = onMessage(messaging, (payload) => {
         if (!payload.notification?.title) return;
+        if (typeof Notification === "undefined") return;
+        if (Notification.permission !== "granted") return;
         new Notification(payload.notification.title, {
           body: payload.notification.body,
         });
@@ -381,10 +383,21 @@ export default function HomePage() {
   useEffect(() => {
     if (!todayAllDone) return;
     const key = `asuka_confetti_done_${todayStr}`;
-    const already = typeof window !== "undefined" ? sessionStorage.getItem(key) : "1";
+    let already = "1";
+    if (typeof window !== "undefined") {
+      try {
+        already = sessionStorage.getItem(key) ?? "";
+      } catch {
+        already = "1";
+      }
+    }
     if (already) return;
 
-    sessionStorage.setItem(key, "1");
+    try {
+      sessionStorage.setItem(key, "1");
+    } catch {
+      return;
+    }
     const showTimer = window.setTimeout(() => setShowConfetti(true), 0);
     if (confettiTimer.current) window.clearTimeout(confettiTimer.current);
     confettiTimer.current = window.setTimeout(() => setShowConfetti(false), 1200);
@@ -681,6 +694,10 @@ export default function HomePage() {
     }
     const supported = await isSupported();
     if (!supported) {
+      setReminderMessage(strings.messages.remindersUnsupported);
+      return;
+    }
+    if (!("serviceWorker" in navigator)) {
       setReminderMessage(strings.messages.remindersUnsupported);
       return;
     }
