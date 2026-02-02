@@ -2,7 +2,17 @@
 
 import { startTransition, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
-import { collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  setDoc,
+  updateDoc,
+  arrayRemove,
+  arrayUnion,
+} from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import {
   Plus,
@@ -87,10 +97,15 @@ type EventItem = {
   location?: string;
   recurring?: boolean;
 };
+type TripTodoWithSource = TripTodo & {
+  source: "trip";
+  tripName: string;
+  tripId: string;
+};
 type GlobalTodoWithSource = GlobalTodo & {
   source: "global";
 };
-type CombinedTodo = GlobalTodoWithSource;
+type CombinedTodo = TripTodoWithSource | GlobalTodoWithSource;
 type CountType = "total" | "items" | "tasks" | "people";
 type WeatherState = {
   currentTemp: number;
@@ -100,17 +115,6 @@ type WeatherState = {
   updatedAt: string;
 };
 type RecurrenceType = "none" | "daily" | "weekly" | "monthly" | "yearly";
-
-const todoOrderValue = (todo: { order?: number; dueDate: string }) => {
-  if (typeof todo.order === "number") return todo.order;
-  return Number.isNaN(Date.parse(todo.dueDate)) ? 0 : Date.parse(todo.dueDate);
-};
-
-const compareTodos = (a: { done: boolean; order?: number; dueDate: string }, b: { done: boolean; order?: number; dueDate: string }) => {
-  const status = Number(a.done) - Number(b.done);
-  if (status !== 0) return status;
-  return todoOrderValue(a) - todoOrderValue(b);
-};
 
 /* ---------------- DELIGHT HELPERS ---------------- */
 function seasonEmoji(monthIndex0: number) {
@@ -211,12 +215,14 @@ export default function HomePage() {
 
   const [wishText, setWishText] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editType, setEditType] = useState<"todo" | "wishlist" | null>(null);
+  const [editType, setEditType] = useState<"todo" | "tripTodo" | "wishlist" | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [editDue, setEditDue] = useState("");
   const [editPic, setEditPic] = useState("");
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceType>("none");
+  const [editTripId, setEditTripId] = useState<string | null>(null);
+  const [editTripTodoOriginal, setEditTripTodoOriginal] = useState<TripTodoWithSource | null>(null);
 
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimer = useRef<number | null>(null);
@@ -271,6 +277,30 @@ export default function HomePage() {
     return [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   }, [firstDay, daysInMonth]);
 
+  const todoOrderValue = (todo: { order?: number; dueDate: string }) => {
+    if (typeof todo.order === "number") return todo.order;
+    return Number.isNaN(Date.parse(todo.dueDate)) ? 0 : Date.parse(todo.dueDate);
+  };
+  const compareTodos = (a: { done: boolean; order?: number; dueDate: string }, b: { done: boolean; order?: number; dueDate: string }) => {
+    const status = Number(a.done) - Number(b.done);
+    if (status !== 0) return status;
+    return todoOrderValue(a) - todoOrderValue(b);
+  };
+
+  const tripTodosForDate = useMemo<TripTodoWithSource[]>(() => {
+    return (trips || []).flatMap((trip) =>
+      (trip.todos || [])
+        .filter((todo) => todo.dueDate === selectedDate)
+        .sort(compareTodos)
+        .map((todo) => ({
+          ...todo,
+          source: "trip" as const,
+          tripName: trip.name,
+          tripId: trip.id,
+        }))
+    );
+  }, [trips, selectedDate]);
+
   const globalTodosForDate = useMemo<GlobalTodoWithSource[]>(() => {
     return (globalTodos || [])
       .filter((t) => t.dueDate === selectedDate)
@@ -279,12 +309,22 @@ export default function HomePage() {
   }, [globalTodos, selectedDate]);
 
   const todosForDateCombined = useMemo<CombinedTodo[]>(() => {
-    return [...globalTodosForDate].sort(compareTodos);
-  }, [globalTodosForDate]);
+    return [...globalTodosForDate, ...tripTodosForDate].sort(compareTodos);
+  }, [globalTodosForDate, tripTodosForDate]);
 
   const todosSoon = useMemo<CombinedTodo[]>(() => {
+    const fromTrips = (trips || []).flatMap((trip) =>
+      (trip.todos || [])
+        .sort(compareTodos)
+        .map((todo) => ({
+          ...todo,
+          source: "trip" as const,
+          tripName: trip.name,
+          tripId: trip.id,
+        }))
+    );
     const fromGlobal = (globalTodos || []).map((t) => ({ ...t, source: "global" as const }));
-    const all: CombinedTodo[] = [...fromGlobal];
+    const all: CombinedTodo[] = [...fromGlobal, ...fromTrips];
     all.sort(compareTodos);
     return all.slice(0, 10);
   }, [globalTodos]);
@@ -438,6 +478,8 @@ export default function HomePage() {
     setEditDue("");
     setEditPic("");
     setEditRecurrence("none");
+    setEditTripId(null);
+    setEditTripTodoOriginal(null);
   }
 
   async function createTrip() {
@@ -512,6 +554,43 @@ export default function HomePage() {
     });
   }
 
+  function baseTripTodo(todo: TripTodoWithSource) {
+    return {
+      text: todo.text,
+      pic: todo.pic,
+      done: todo.done,
+      dueDate: todo.dueDate,
+      order: todo.order,
+    };
+  }
+
+  async function toggleTripTodo(todo: TripTodoWithSource) {
+    const baseTodo = baseTripTodo(todo);
+    await updateDoc(doc(db, "trips", todo.tripId), {
+      todos: arrayRemove(baseTodo),
+    });
+    await updateDoc(doc(db, "trips", todo.tripId), {
+      todos: arrayUnion({ ...baseTodo, done: !baseTodo.done }),
+    });
+  }
+
+  async function updateTripTodo() {
+    if (!editTripId || !editTripTodoOriginal) return;
+    const updatedTodo = {
+      text: editText.trim(),
+      pic: editPic.trim(),
+      done: editTripTodoOriginal.done,
+      dueDate: editDue,
+      order: editTripTodoOriginal.order ?? Date.now(),
+    };
+    await updateDoc(doc(db, "trips", editTripId), {
+      todos: arrayRemove(baseTripTodo(editTripTodoOriginal)),
+    });
+    await updateDoc(doc(db, "trips", editTripId), {
+      todos: arrayUnion(updatedTodo),
+    });
+  }
+
   async function moveWishlistItem(itemId: string, direction: -1 | 1) {
     const ordered = wishlistOrdered;
     const index = ordered.findIndex((item) => item.id === itemId);
@@ -561,6 +640,18 @@ export default function HomePage() {
     setShowEditModal(true);
   }
 
+  function openEditTripTodo(todo: TripTodoWithSource) {
+    setEditType("tripTodo");
+    setEditTripId(todo.tripId);
+    setEditTripTodoOriginal(todo);
+    setEditId(null);
+    setEditText(todo.text);
+    setEditDue(todo.dueDate);
+    setEditPic(todo.pic);
+    setEditRecurrence("none");
+    setShowEditModal(true);
+  }
+
   function openEditWishlist(item: WishlistItem) {
     setEditType("wishlist");
     setEditId(item.id);
@@ -600,6 +691,7 @@ export default function HomePage() {
     return next;
   };
   const toDateInput = (date: Date) => date.toISOString().slice(0, 10);
+  const toDateTimeInput = (date: Date) => date.toISOString().slice(0, 16);
   const presetOptions = [
     { id: "lilac", label: "Lilac", color: "#7c3aed" },
     { id: "mint", label: "Mint", color: "#10b981" },
@@ -955,59 +1047,60 @@ export default function HomePage() {
                 <p className="text-xs text-cute-muted mb-2">{strings.labels.todoDeadlines}</p>
 
                 {filteredTodosForDate.map((todo, i) => {
+                  const isGlobal = todo.source === "global";
                   return (
                     <div
-                      key={`${todo.source}-${todo.id}-${todo.text}-${i}`}
-                      onClick={() => toggleGlobalTodo(todo)}
-                      onKeyDown={handleKeyActivate(() => toggleGlobalTodo(todo))}
+                      key={
+                        todo.source === "global"
+                          ? `${todo.source}-${todo.id}-${todo.text}-${i}`
+                          : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
+                      }
+                      onClick={() => (isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo))}
+                      onKeyDown={handleKeyActivate(() =>
+                        isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo)
+                      )}
                       className={`detail-pill ${todo.done ? "detail-green" : "detail-red"}`}
                       role="button"
                       tabIndex={0}
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <button
-                          className="icon-btn mt-0.5"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            toggleGlobalTodo(todo);
-                          }}
-                          aria-label={todo.done ? strings.actions.undo : strings.actions.done}
-                          title={todo.done ? strings.actions.undo : strings.actions.done}
-                        >
-                          <CheckSquare size={16} />
-                        </button>
                         <div className="min-w-0">
                           <p className={`font-semibold ${todo.done ? "line-through opacity-80" : ""}`}>{todo.text}</p>
                           <p className="text-xs opacity-80">
-                            {`${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}${
-                              todo.pic ? ` • ${strings.labels.pic}: ${todo.pic}` : ""
-                            } • ${strings.labels.repeat}: ${recurrenceSummary(todo.recurrence)}`}
+                            {isGlobal
+                              ? `${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}${
+                                  todo.pic ? ` • ${strings.labels.pic}: ${todo.pic}` : ""
+                                } • ${strings.labels.repeat}: ${recurrenceSummary(todo.recurrence)}`
+                              : `${todo.tripName} • ${strings.labels.pic}: ${todo.pic}`}
                           </p>
                         </div>
 
                         <div className="flex items-center gap-1">
                           <button
                             className="icon-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEditTodo(todo);
-                              }}
-                              aria-label={strings.actions.editTodo}
-                              title={strings.actions.editTodo}
-                            >
-                              <Pencil size={18} />
-                            </button>
-                          <button
-                            className="icon-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteGlobalTodo(todo);
+                              if (isGlobal) openEditTodo(todo);
+                              else openEditTripTodo(todo);
                             }}
-                            aria-label={strings.actions.deleteTodo}
-                            title={strings.actions.deleteTodo}
+                            aria-label={strings.actions.editTodo}
+                            title={strings.actions.editTodo}
                           >
-                            <Trash2 size={18} />
+                            <Pencil size={18} />
                           </button>
+                          {isGlobal ? (
+                            <button
+                              className="icon-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteGlobalTodo(todo);
+                              }}
+                              aria-label={strings.actions.deleteTodo}
+                              title={strings.actions.deleteTodo}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          ) : null}
                         </div>
                       </div>
                     </div>
@@ -1194,12 +1287,19 @@ export default function HomePage() {
 
             <div className="space-y-2">
               {todosSoon.map((todo, i) => {
+                const isGlobal = todo.source === "global";
                 return (
                   <div
-                    key={`${todo.source}-${todo.id}-${todo.text}-${todo.dueDate}-${i}`}
+                    key={
+                      todo.source === "global"
+                        ? `${todo.source}-${todo.id}-${todo.text}-${todo.dueDate}-${i}`
+                        : `${todo.source}-${todo.tripId}-${todo.text}-${todo.dueDate}-${i}`
+                    }
                     className={`row-cute ${todo.done ? "opacity-80" : ""}`}
-                    onClick={() => toggleGlobalTodo(todo)}
-                    onKeyDown={handleKeyActivate(() => toggleGlobalTodo(todo))}
+                    onClick={() => (isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo))}
+                    onKeyDown={handleKeyActivate(() =>
+                      isGlobal ? toggleGlobalTodo(todo) : toggleTripTodo(todo)
+                    )}
                     role="button"
                     tabIndex={0}
                   >
@@ -1217,9 +1317,11 @@ export default function HomePage() {
                     <div className="min-w-0">
                       <p className={`font-semibold truncate ${todo.done ? "line-through text-cute-muted" : ""}`}>{todo.text}</p>
                       <p className="text-xs text-cute-muted mt-1">
-                        {`${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}${
-                          todo.pic ? ` • ${strings.labels.pic}: ${todo.pic}` : ""
-                        } • ${strings.labels.repeat}: ${recurrenceSummary(todo.recurrence)}`}
+                        {isGlobal
+                          ? `${strings.labels.global} • ${strings.labels.due}: ${todo.dueDate}${
+                              todo.pic ? ` • ${strings.labels.pic}: ${todo.pic}` : ""
+                            } • ${strings.labels.repeat}: ${recurrenceSummary(todo.recurrence)}`
+                          : `${todo.tripName} • ${strings.labels.pic}: ${todo.pic} • ${strings.labels.due}: ${todo.dueDate}`}
                       </p>
                     </div>
 
@@ -1228,24 +1330,27 @@ export default function HomePage() {
                         className="icon-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          openEditTodo(todo);
+                          if (isGlobal) openEditTodo(todo);
+                          else openEditTripTodo(todo);
                         }}
                         aria-label={strings.actions.editTodo}
                         title={strings.actions.editTodo}
                       >
                         <Pencil size={18} />
                       </button>
-                      <button
-                        className="icon-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteGlobalTodo(todo);
-                        }}
-                        aria-label={strings.actions.deleteTodo}
-                        title={strings.actions.deleteTodo}
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      {isGlobal ? (
+                        <button
+                          className="icon-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteGlobalTodo(todo);
+                          }}
+                          aria-label={strings.actions.deleteTodo}
+                          title={strings.actions.deleteTodo}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 );
@@ -1625,7 +1730,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            {editType === "todo" && (
+            {(editType === "todo" || editType === "tripTodo") && (
               <div className="space-y-3">
                 <input
                   placeholder={strings.labels.taskPlaceholder}
@@ -1646,29 +1751,42 @@ export default function HomePage() {
                   <p className="cute-label">{strings.labels.dueDate}</p>
                   <input type="date" value={editDue} onChange={(e) => setEditDue(e.target.value)} className="cute-input" />
                 </div>
-                <div>
-                  <p className="cute-label">{strings.labels.repeat}</p>
-                  <select
-                    value={editRecurrence}
-                    onChange={(e) => setEditRecurrence(e.target.value as RecurrenceType)}
-                    className="cute-input"
-                  >
-                    <option value="none">{strings.labels.repeatNone}</option>
-                    <option value="daily">{strings.labels.repeatDaily}</option>
-                    <option value="weekly">{strings.labels.repeatWeekly}</option>
-                    <option value="monthly">{strings.labels.repeatMonthly}</option>
-                    <option value="yearly">{strings.labels.repeatYearly}</option>
-                  </select>
-                </div>
+                {editType === "todo" ? (
+                  <>
+                    <div>
+                      <p className="cute-label">{strings.labels.repeat}</p>
+                      <select
+                        value={editRecurrence}
+                        onChange={(e) => setEditRecurrence(e.target.value as RecurrenceType)}
+                        className="cute-input"
+                      >
+                        <option value="none">{strings.labels.repeatNone}</option>
+                        <option value="daily">{strings.labels.repeatDaily}</option>
+                        <option value="weekly">{strings.labels.repeatWeekly}</option>
+                        <option value="monthly">{strings.labels.repeatMonthly}</option>
+                        <option value="yearly">{strings.labels.repeatYearly}</option>
+                      </select>
+                    </div>
+                  </>
+                ) : null}
                 <button
                   onClick={async () => {
                     if (!editText.trim() || !editDue) return;
-                    if (!activeTodo) return;
-                    await updateGlobalTodo(activeTodo);
+                    if (editType === "todo") {
+                      if (!activeTodo) return;
+                      await updateGlobalTodo(activeTodo);
+                    }
+                    if (editType === "tripTodo") {
+                      if (!editPic.trim()) return;
+                      if (!editTripTodoOriginal) return;
+                      await updateTripTodo();
+                    }
                     resetEditInputs();
                   }}
                   className="w-full py-4 rounded-2xl bg-cute-accent text-white font-extrabold shadow-cute active:scale-[0.99] transition disabled:opacity-50"
-                  disabled={!editText.trim() || !editDue}
+                  disabled={
+                    !editText.trim() || !editDue || (editType === "tripTodo" && !editPic.trim())
+                  }
                 >
                   {strings.actions.saveChanges}
                 </button>
