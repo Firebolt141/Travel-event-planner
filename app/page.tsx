@@ -1111,7 +1111,7 @@ export default function HomePage() {
                             >
                               <Trash2 size={18} />
                             </button>
-                          ) : null}
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1366,7 +1366,21 @@ export default function HomePage() {
                         >
                           <Trash2 size={18} />
                         </button>
-                      ) : null}
+                      ) : (
+                        <button
+                          className="icon-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (todo.source === "trip") {
+                              deleteTripTodo(todo);
+                            }
+                          }}
+                          aria-label={strings.actions.deleteTodo}
+                          title={strings.actions.deleteTodo}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
