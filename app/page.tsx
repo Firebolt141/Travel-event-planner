@@ -306,6 +306,11 @@ export default function HomePage() {
     return [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   }, [firstDay, daysInMonth]);
 
+  const todoOrderValue = (todo: { order?: number; dueDate: string }) => {
+    if (typeof todo.order === "number") return todo.order;
+    return Number.isNaN(Date.parse(todo.dueDate)) ? 0 : Date.parse(todo.dueDate);
+  };
+
   const tripTodosForDate = useMemo<TripTodoWithSource[]>(() => {
     return (trips || []).flatMap((trip) =>
       (trip.todos || [])
@@ -790,10 +795,6 @@ export default function HomePage() {
         action();
       }
     };
-  const todoOrderValue = (todo: { order?: number; dueDate: string }) => {
-    if (typeof todo.order === "number") return todo.order;
-    return Number.isNaN(Date.parse(todo.dueDate)) ? 0 : Date.parse(todo.dueDate);
-  };
   const addRecurrence = (date: Date, recurrence: RecurrenceType) => {
     const next = new Date(date);
     if (recurrence === "daily") next.setDate(next.getDate() + 1);
